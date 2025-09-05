@@ -8,7 +8,7 @@ const VidaUAQApp = () => {
   const [favorites, setFavorites] = useState([]);
 
   const userProfile = {
-    nombre: 'Juan Pérez',
+    nombre: 'Son Goku',
     carrera: 'Ingeniería en Software',
     semestre: '6to',
     horasServicio: 120,
@@ -36,7 +36,7 @@ const VidaUAQApp = () => {
     },
     {
       id: 3,
-      nombre: 'Cafetería FI "El Bit"',
+      nombre: 'Cafetería FI "El comal++"',
       categoria: 'Comida',
       descripcion: 'Cafetería estudiantil con precios accesibles',
       horario: '7:30 AM - 4:00 PM',
