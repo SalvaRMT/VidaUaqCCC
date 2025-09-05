@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, TextInput, Modal, StyleSheet } from 'react-native';
-import { MapPin, Search, Calendar, User, Clock, Heart, Star, Book, Coffee, Users, Award, Filter } from 'lucide-react-native';
 
 const VidaUAQApp = () => {
   const [activeTab, setActiveTab] = useState('campus');
@@ -96,16 +95,18 @@ const VidaUAQApp = () => {
 
   const renderStars = (rating) => {
     return Array.from({length: 5}, (_, i) => (
-      <Star key={i} size={12} color={i < rating ? "#ffeaa7" : "#ddd"} fill={i < rating ? "#ffeaa7" : "none"} />
+      <Text key={i} style={[styles.star, { color: i < rating ? "#ffeaa7" : "#ddd" }]}>
+        ★
+      </Text>
     ));
   };
 
   const getIcon = (categoria) => {
     switch(categoria) {
-      case 'Estudio': return <Book size={18} color="#74b9ff" />;
-      case 'Comida': return <Coffee size={18} color="#74b9ff" />;
-      case 'Laboratorio': return <Users size={18} color="#74b9ff" />;
-      default: return <MapPin size={18} color="#74b9ff" />;
+      case 'Estudio': return '📚';
+      case 'Comida': return '☕';
+      case 'Laboratorio': return '🔬';
+      default: return '📍';
     }
   };
 
@@ -117,7 +118,7 @@ const VidaUAQApp = () => {
       </View>
 
       <View style={styles.searchBox}>
-        <Search size={20} color="#74b9ff" />
+        <Text style={styles.searchIcon}>🔍</Text>
         <TextInput
           style={styles.searchInput}
           placeholder="Buscar lugares..."
@@ -131,15 +132,13 @@ const VidaUAQApp = () => {
         <TouchableOpacity key={location.id} style={styles.card} onPress={() => setSelectedLocation(location)}>
           <View style={styles.cardHeader}>
             <View style={styles.titleRow}>
-              {getIcon(location.categoria)}
+              <Text style={styles.categoryIcon}>{getIcon(location.categoria)}</Text>
               <Text style={styles.cardTitle}>{location.nombre}</Text>
             </View>
             <TouchableOpacity onPress={() => toggleFavorite(location.id)}>
-              <Heart 
-                size={20} 
-                color={favorites.includes(location.id) ? "#d63031" : "#636e72"}
-                fill={favorites.includes(location.id) ? "#d63031" : "none"}
-              />
+              <Text style={[styles.heartIcon, { color: favorites.includes(location.id) ? "#d63031" : "#636e72" }]}>
+                {favorites.includes(location.id) ? '❤️' : '🤍'}
+              </Text>
             </TouchableOpacity>
           </View>
           
@@ -151,7 +150,7 @@ const VidaUAQApp = () => {
               <Text style={styles.ratingText}>{location.rating}</Text>
             </View>
             <View style={styles.schedule}>
-              <Clock size={14} color="#636e72" />
+              <Text style={styles.clockIcon}>🕐</Text>
               <Text style={styles.scheduleText}>{location.horario}</Text>
             </View>
           </View>
@@ -231,9 +230,9 @@ const VidaUAQApp = () => {
           <View style={styles.eventInfo}>
             <Text style={styles.eventTitle}>{evento.titulo}</Text>
             <View style={styles.eventMeta}>
-              <Clock size={14} color="#74b9ff" />
+              <Text style={styles.clockIcon}>🕐</Text>
               <Text style={styles.eventTime}>{evento.hora}</Text>
-              <MapPin size={14} color="#74b9ff" />
+              <Text style={styles.locationIcon}>📍</Text>
               <Text style={styles.eventLocation}>{evento.lugar}</Text>
             </View>
             <Text style={styles.eventDesc}>{evento.descripcion}</Text>
@@ -263,17 +262,17 @@ const VidaUAQApp = () => {
 
         <View style={styles.stats}>
           <View style={styles.stat}>
-            <Award size={24} color="#00b894" />
+            <Text style={styles.statIcon}>🏆</Text>
             <Text style={styles.statNumber}>{userProfile.horasServicio}</Text>
             <Text style={styles.statLabel}>Horas completadas</Text>
           </View>
           <View style={styles.stat}>
-            <Clock size={24} color="#fdcb6e" />
+            <Text style={styles.statIcon}>⏰</Text>
             <Text style={styles.statNumber}>{userProfile.horasRequeridas - userProfile.horasServicio}</Text>
             <Text style={styles.statLabel}>Horas restantes</Text>
           </View>
           <View style={styles.stat}>
-            <Heart size={24} color="#d63031" />
+            <Text style={styles.statIcon}>❤️</Text>
             <Text style={styles.statNumber}>{favorites.length}</Text>
             <Text style={styles.statLabel}>Favoritos</Text>
           </View>
@@ -293,17 +292,19 @@ const VidaUAQApp = () => {
 
       <View style={styles.tabBar}>
         {[
-          { key: 'campus', icon: MapPin, label: 'Campus' },
-          { key: 'servicio', icon: Award, label: 'Servicio' },
-          { key: 'eventos', icon: Calendar, label: 'Eventos' },
-          { key: 'perfil', icon: User, label: 'Perfil' }
+          { key: 'campus', icon: '🏛️', label: 'Campus' },
+          { key: 'servicio', icon: '🎓', label: 'Servicio' },
+          { key: 'eventos', icon: '📅', label: 'Eventos' },
+          { key: 'perfil', icon: '👤', label: 'Perfil' }
         ].map(tab => (
           <TouchableOpacity
             key={tab.key}
             style={styles.tab}
             onPress={() => setActiveTab(tab.key)}
           >
-            <tab.icon size={22} color={activeTab === tab.key ? '#74b9ff' : '#636e72'} />
+            <Text style={[styles.tabIcon, activeTab === tab.key && styles.activeTabIcon]}>
+              {tab.icon}
+            </Text>
             <Text style={[styles.tabText, activeTab === tab.key && styles.activeTabText]}>
               {tab.label}
             </Text>
@@ -340,17 +341,22 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#74b9ff', marginBottom: 5 },
   subtitle: { fontSize: 14, color: '#636e72' },
   searchBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1e272e', margin: 15, padding: 12, borderRadius: 10, borderWidth: 1, borderColor: '#40505f' },
-  searchInput: { flex: 1, marginLeft: 10, fontSize: 16, color: '#ddd' },
+  searchIcon: { fontSize: 18, marginRight: 10 },
+  searchInput: { flex: 1, fontSize: 16, color: '#ddd' },
   card: { backgroundColor: '#1e272e', margin: 15, marginTop: 0, padding: 15, borderRadius: 12, borderWidth: 1, borderColor: '#40505f' },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   titleRow: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-  cardTitle: { fontSize: 16, fontWeight: 'bold', color: '#ddd', marginLeft: 8 },
+  categoryIcon: { fontSize: 18, marginRight: 8 },
+  cardTitle: { fontSize: 16, fontWeight: 'bold', color: '#ddd' },
+  heartIcon: { fontSize: 20 },
   description: { fontSize: 14, color: '#636e72', marginBottom: 10 },
   metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   rating: { flexDirection: 'row', alignItems: 'center' },
+  star: { fontSize: 14, marginRight: 2 },
   ratingText: { color: '#ddd', marginLeft: 5, fontSize: 14 },
   schedule: { flexDirection: 'row', alignItems: 'center' },
-  scheduleText: { color: '#636e72', marginLeft: 4, fontSize: 12 },
+  clockIcon: { fontSize: 14, marginRight: 4 },
+  scheduleText: { color: '#636e72', fontSize: 12 },
   services: { flexDirection: 'row', flexWrap: 'wrap' },
   serviceTag: { backgroundColor: '#40505f', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, marginRight: 6, marginBottom: 4 },
   serviceText: { color: '#74b9ff', fontSize: 12 },
@@ -376,7 +382,8 @@ const styles = StyleSheet.create({
   eventTitle: { fontSize: 16, fontWeight: 'bold', color: '#ddd', marginBottom: 5 },
   eventMeta: { flexDirection: 'row', alignItems: 'center', marginBottom: 5 },
   eventTime: { color: '#636e72', marginLeft: 4, marginRight: 10, fontSize: 12 },
-  eventLocation: { color: '#636e72', marginLeft: 4, fontSize: 12 },
+  locationIcon: { fontSize: 14, marginRight: 4 },
+  eventLocation: { color: '#636e72', fontSize: 12 },
   eventDesc: { fontSize: 14, color: '#636e72' },
   profileCard: { backgroundColor: '#1e272e', margin: 15, padding: 20, borderRadius: 12, borderWidth: 1, borderColor: '#40505f' },
   profileHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
@@ -388,11 +395,14 @@ const styles = StyleSheet.create({
   profileSemester: { fontSize: 12, color: '#636e72' },
   stats: { flexDirection: 'row', justifyContent: 'space-around' },
   stat: { alignItems: 'center' },
-  statNumber: { fontSize: 18, fontWeight: 'bold', color: '#ddd', marginTop: 5, marginBottom: 2 },
+  statIcon: { fontSize: 24, marginBottom: 5 },
+  statNumber: { fontSize: 18, fontWeight: 'bold', color: '#ddd', marginBottom: 2 },
   statLabel: { fontSize: 10, color: '#636e72', textAlign: 'center' },
   tabBar: { flexDirection: 'row', backgroundColor: '#1e272e', paddingBottom: 25, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#40505f' },
   tab: { flex: 1, alignItems: 'center', paddingVertical: 8 },
-  tabText: { fontSize: 11, color: '#636e72', marginTop: 4 },
+  tabIcon: { fontSize: 22, marginBottom: 4 },
+  activeTabIcon: { color: '#74b9ff' },
+  tabText: { fontSize: 11, color: '#636e72' },
   activeTabText: { color: '#74b9ff', fontWeight: '600' },
   modal: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalContent: { backgroundColor: '#1e272e', padding: 20, borderTopLeftRadius: 20, borderTopRightRadius: 20 },
