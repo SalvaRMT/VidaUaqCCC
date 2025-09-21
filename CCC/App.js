@@ -1,184 +1,311 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput, Modal, StyleSheet } from 'react-native';
+import {
+  View, Text, TouchableOpacity, ScrollView, TextInput, Modal,
+  StyleSheet, SafeAreaView, StatusBar, KeyboardAvoidingView, Platform, Alert
+} from 'react-native';
+
+// --- Sistema de Diseño (Theme) ---
+const theme = {
+  colors: {
+    background: '#0F172A',
+    surface: '#1F2937',
+    text: '#E5E7EB',
+    subtext: '#94A3B8',
+    primary: '#22D3EE',
+    accent: '#38BDF8',
+    white: '#FFFFFF',
+    star: '#FBBF24',
+    success: '#22C55E',
+    highlight: 'rgba(34, 211, 238, 0.15)',
+    danger: '#EF4444',
+  },
+  spacing: { sm: 8, md: 16, lg: 24 },
+  typography: {
+    h1: { fontSize: 32, fontWeight: '900', color: '#E5E7EB' },
+    h2: { fontSize: 24, fontWeight: '700', color: '#E5E7EB' },
+    h3: { fontSize: 18, fontWeight: '600', color: '#E5E7EB' },
+    body: { fontSize: 16, color: '#E5E7EB' },
+    caption: { fontSize: 12, color: '#94A3B8' },
+  },
+  borderRadius: { md: 12, lg: 20 },
+  shadow: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+};
+
+// --- Datos demo ---
+const userProfile = { nombre: 'Son Goku', carrera: 'Ingeniería en Software', semestre: '6to', horasServicio: 120, horasRequeridas: 480 };
+const campusLocations = [
+  { id: 1, nombre: 'Biblioteca Central Informática', categoria: 'Estudio', descripcion: 'Biblioteca especializada en tecnología y programación', horario: '7:00 AM - 9:00 PM', rating: 4.8, servicios: ['WiFi', 'Computadoras', 'Área silenciosa'], icon: '📚' },
+  { id: 2, nombre: 'Lab de Redes', categoria: 'Laboratorio', descripcion: 'Laboratorio con equipos Cisco para networking', horario: '8:00 AM - 6:00 PM', rating: 4.5, servicios: ['Equipos Cisco', 'Simuladores'], icon: '🔬' },
+  { id: 3, nombre: 'Cafetería FI "El comal++"', categoria: 'Comida', descripcion: 'Cafetería estudiantil con precios accesibles', horario: '7:30 AM - 4:00 PM', rating: 4.2, servicios: ['WiFi', 'Precios estudiante'], icon: '☕' }
+];
+const proyectosServicio = [
+  { id: 1, titulo: 'Desarrollo Web para ONG', organizacion: 'Fundación Educativa Querétaro', descripcion: 'Crear sitio web con React para organización educativa', modalidad: 'Híbrido', horas: 150, tecnologias: ['React', 'Node.js', 'MongoDB'], status: 'Disponible' },
+  { id: 2, titulo: 'Sistema Hospitalario', organizacion: 'Hospital General', descripcion: 'Sistema de inventario médico', modalidad: 'Presencial', horas: 200, tecnologias: ['Java', 'Spring', 'PostgreSQL'], status: 'Disponible' }
+];
+const eventos = [
+  { id: 1, titulo: 'Hackathon FI 2025', fecha: '2025-09-15', hora: '9:00 AM', lugar: 'Aula Magna', descripcion: '48 horas de programación intensiva' },
+  { id: 2, titulo: 'Conferencia IA', fecha: '2025-09-20', hora: '4:00 PM', lugar: 'Aula Magna', descripcion: 'Experto de Google hablará sobre IA' }
+];
 
 const VidaUAQApp = () => {
+  // Auth
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authMode, setAuthMode] = useState('login'); // 'login' | 'signup'
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authName, setAuthName] = useState('');
+  const [authPassword2, setAuthPassword2] = useState('');
+  const [signupSuccess, setSignupSuccess] = useState(false); // <-- modal éxito
+
+  // App UI
   const [activeTab, setActiveTab] = useState('campus');
   const [searchText, setSearchText] = useState('');
   const [selectedLocation, setSelectedLocation] = useState(null);
-  const [favorites, setFavorites] = useState([]);
-
-  const userProfile = {
-    nombre: 'Juan Pérez',
-    carrera: 'Ingeniería en Software',
-    semestre: '6to',
-    horasServicio: 120,
-    horasRequeridas: 480
-  };
-  
-  const campusLocations = [
-    {
-      id: 1,
-      nombre: 'Biblioteca Central Informática',
-      categoria: 'Estudio',
-      descripcion: 'Biblioteca especializada en tecnología y programación',
-      horario: '7:00 AM - 9:00 PM',
-      rating: 4.8,
-      servicios: ['WiFi', 'Computadoras', 'Área silenciosa']
-    },
-    {
-      id: 2,
-      nombre: 'Lab de Redes',
-      categoria: 'Laboratorio',
-      descripcion: 'Laboratorio con equipos Cisco para networking',
-      horario: '8:00 AM - 6:00 PM',
-      rating: 4.5,
-      servicios: ['Equipos Cisco', 'Simuladores']
-    },
-    {
-      id: 3,
-      nombre: 'Cafetería FI "El Bit"',
-      categoria: 'Comida',
-      descripcion: 'Cafetería estudiantil con precios accesibles',
-      horario: '7:30 AM - 4:00 PM',
-      rating: 4.2,
-      servicios: ['WiFi', 'Precios estudiante']
-    }
-  ];
-
-  const proyectosServicio = [
-    {
-      id: 1,
-      titulo: 'Desarrollo Web para ONG',
-      organizacion: 'Fundación Educativa Querétaro',
-      descripcion: 'Crear sitio web con React para organización educativa',
-      modalidad: 'Híbrido',
-      horas: 150,
-      tecnologias: ['React', 'Node.js', 'MongoDB'],
-      status: 'Disponible'
-    },
-    {
-      id: 2,
-      titulo: 'Sistema Hospitalario',
-      organizacion: 'Hospital General',
-      descripcion: 'Sistema de inventario médico',
-      modalidad: 'Presencial',
-      horas: 200,
-      tecnologias: ['Java', 'Spring', 'PostgreSQL'],
-      status: 'Disponible'
-    }
-  ];
-
-  const eventos = [
-    {
-      id: 1,
-      titulo: 'Hackathon FI 2025',
-      fecha: '2025-09-15',
-      hora: '9:00 AM',
-      lugar: 'Aula Magna',
-      descripcion: '48 horas de programación intensiva'
-    },
-    {
-      id: 2,
-      titulo: 'Conferencia IA',
-      fecha: '2025-09-20',
-      hora: '4:00 PM',
-      lugar: 'Aula Magna',
-      descripcion: 'Experto de Google hablará sobre IA'
-    }
-  ];
+  const [favorites, setFavorites] = useState([2]);
 
   const toggleFavorite = (id) => {
-    setFavorites(prev => 
-      prev.includes(id) ? prev.filter(fav => fav !== id) : [...prev, id]
-    );
+    setFavorites(prev => prev.includes(id) ? prev.filter(fav => fav !== id) : [...prev, id]);
   };
 
   const renderStars = (rating) => {
-    return Array.from({length: 5}, (_, i) => (
-      <Text key={i} style={[styles.star, { color: i < rating ? "#ffeaa7" : "#ddd" }]}>
-        ★
-      </Text>
+    return Array.from({ length: 5 }, (_, i) => (
+      <Text key={i} style={{ color: i < Math.round(rating) ? theme.colors.star : '#475569', fontSize: 16 }}>★</Text>
     ));
   };
 
-  const getIcon = (categoria) => {
-    switch(categoria) {
-      case 'Estudio': return '📚';
-      case 'Comida': return '☕';
-      case 'Laboratorio': return '🔬';
-      default: return '📍';
+  // Demo de login/registro (sin backend)
+  const handleAuthSubmit = () => {
+    if (!authEmail || !authPassword || (authMode === 'signup' && (!authName || !authPassword2))) {
+      Alert.alert('Completa los campos', 'Todos los campos son obligatorios.');
+      return;
     }
+    if (authMode === 'signup' && authPassword !== authPassword2) {
+      Alert.alert('Contraseñas', 'Las contraseñas no coinciden.');
+      return;
+    }
+
+    if (authMode === 'signup') {
+      // No iniciamos sesión; mostramos éxito
+      setSignupSuccess(true);
+      // Conservamos el correo para que lo use en el login
+      // Solo limpiamos contraseñas y nombre
+      setAuthPassword('');
+      setAuthPassword2('');
+      setAuthName('');
+      return;
+    }
+
+    // Login
+    setIsAuthenticated(true);
+    setActiveTab('campus');
   };
 
-  const CampusTab = () => (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>🏛️ Explora tu Campus</Text>
-        <Text style={styles.subtitle}>Facultad de Informática - Juriquilla</Text>
-      </View>
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setAuthMode('login');
+    setAuthPassword('');
+    setAuthPassword2('');
+    setAuthName('');
+    setActiveTab('campus');
+    setSearchText('');
+    setSelectedLocation(null);
+    setFavorites([2]);
+  };
 
-      <View style={styles.searchBox}>
-        <Text style={styles.searchIcon}>🔍</Text>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Buscar lugares..."
-          placeholderTextColor="#636e72"
-          value={searchText}
-          onChangeText={setSearchText}
-        />
-      </View>
+  // --- Pantalla de Login/Crear cuenta ---
+  const LoginScreen = () => (
+    <SafeAreaView style={styles.loginContainer}>
+      <StatusBar barStyle="light-content" backgroundColor={theme.colors.background} />
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, justifyContent: 'center' }}>
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingBottom: theme.spacing.lg }}
+          keyboardShouldPersistTaps="always"   // <- evita que se cierre el teclado
+        >
+          <View style={{ padding: theme.spacing.lg }}>
+            <Text style={styles.loginLogo}>UAQ</Text>
+            <Text style={styles.loginTitle}>Vida Universitaria</Text>
+            <Text style={styles.loginSubtitle}>
+              {authMode === 'login' ? 'Inicia sesión para continuar' : 'Crea tu cuenta institucional'}
+            </Text>
 
-      {campusLocations.map(location => (
-        <TouchableOpacity key={location.id} style={styles.card} onPress={() => setSelectedLocation(location)}>
-          <View style={styles.cardHeader}>
-            <View style={styles.titleRow}>
-              <Text style={styles.categoryIcon}>{getIcon(location.categoria)}</Text>
-              <Text style={styles.cardTitle}>{location.nombre}</Text>
+            {authMode === 'signup' && (
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Nombre completo</Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Tu nombre"
+                  placeholderTextColor={theme.colors.subtext}
+                  value={authName}
+                  onChangeText={setAuthName}
+                  autoCapitalize="words"
+                />
+              </View>
+            )}
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Correo Institucional</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="alguien@uaq.edu.mx"
+                placeholderTextColor={theme.colors.subtext}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                value={authEmail}
+                onChangeText={setAuthEmail}
+              />
             </View>
-            <TouchableOpacity onPress={() => toggleFavorite(location.id)}>
-              <Text style={[styles.heartIcon, { color: favorites.includes(location.id) ? "#d63031" : "#636e72" }]}>
-                {favorites.includes(location.id) ? '❤️' : '🤍'}
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Contraseña</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="••••••••"
+                placeholderTextColor={theme.colors.subtext}
+                secureTextEntry
+                value={authPassword}
+                onChangeText={setAuthPassword}
+              />
+            </View>
+
+            {authMode === 'signup' && (
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Confirmar contraseña</Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="••••••••"
+                  placeholderTextColor={theme.colors.subtext}
+                  secureTextEntry
+                  value={authPassword2}
+                  onChangeText={setAuthPassword2}
+                />
+              </View>
+            )}
+
+            <TouchableOpacity style={styles.loginButton} onPress={handleAuthSubmit}>
+              <Text style={styles.loginButtonText}>{authMode === 'login' ? 'Ingresar' : 'Crear cuenta'}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.switchAuthContainer}
+              onPress={() => setAuthMode(prev => (prev === 'login' ? 'signup' : 'login'))}
+            >
+              <Text style={styles.switchAuthText}>
+                {authMode === 'login' ? '¿No tienes cuenta? Crear cuenta' : '¿Ya tienes cuenta? Inicia sesión'}
               </Text>
             </TouchableOpacity>
           </View>
-          
-          <Text style={styles.description}>{location.descripcion}</Text>
-          
-          <View style={styles.metaRow}>
-            <View style={styles.rating}>
-              {renderStars(location.rating)}
-              <Text style={styles.ratingText}>{location.rating}</Text>
-            </View>
-            <View style={styles.schedule}>
-              <Text style={styles.clockIcon}>🕐</Text>
-              <Text style={styles.scheduleText}>{location.horario}</Text>
-            </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      {/* Modal de éxito de registro */}
+      <Modal visible={signupSuccess} transparent animationType="fade">
+        <View style={styles.successBackdrop}>
+          <View style={styles.successCard}>
+            <Text style={styles.successTitle}>✅ Cuenta creada</Text>
+            <Text style={styles.successMsg}>
+              Tu cuenta se creó con éxito. Pulsa “Volver al inicio” para iniciar sesión.
+            </Text>
+            <TouchableOpacity
+              style={styles.successBtn}
+              onPress={() => {
+                setSignupSuccess(false);
+                setAuthMode('login'); // regresar al login
+              }}
+            >
+              <Text style={styles.successBtnText}>Volver al inicio</Text>
+            </TouchableOpacity>
           </View>
-          
-          <View style={styles.services}>
-            {location.servicios.map(servicio => (
-              <View key={servicio} style={styles.serviceTag}>
-                <Text style={styles.serviceText}>{servicio}</Text>
+        </View>
+      </Modal>
+    </SafeAreaView>
+  );
+
+  // Si no está autenticado, renderiza login/registro
+  if (!isAuthenticated) return <LoginScreen />;
+
+  // --- Tabs ---
+  const CampusTab = () => (
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+      <View style={styles.header}>
+        <Text style={styles.headerName}>🏛 Explora tu Campus</Text>
+        <Text style={styles.headerSubtitle}>Facultad de Informática - Juriquilla</Text>
+      </View>
+
+      <View style={styles.searchContainer}>
+        <Text style={{ fontSize: 20, marginRight: theme.spacing.sm }}>🔍</Text>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Buscar lugares..."
+          placeholderTextColor={theme.colors.subtext}
+          value={searchText}
+          onChangeText={setSearchText}
+          autoCorrect={false}
+          autoCapitalize="none"
+        />
+      </View>
+
+      {campusLocations
+        .filter(loc => loc.nombre.toLowerCase().includes(searchText.toLowerCase()))
+        .map(location => (
+          <TouchableOpacity key={location.id} style={styles.card} onPress={() => setSelectedLocation(location)}>
+            <View style={styles.cardHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                <Text style={{ fontSize: 24, marginRight: theme.spacing.sm }}>{location.icon}</Text>
+                <Text style={styles.cardTitle}>{location.nombre}</Text>
               </View>
-            ))}
-          </View>
-        </TouchableOpacity>
-      ))}
+              <TouchableOpacity onPress={() => toggleFavorite(location.id)}>
+                <Text style={{ fontSize: 28 }}>{favorites.includes(location.id) ? '❤' : '🤍'}</Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.description}>{location.descripcion}</Text>
+
+            <View style={styles.metaRow}>
+              <View style={styles.ratingContainer}>
+                {renderStars(location.rating)}
+                <Text style={styles.ratingText}>{location.rating}</Text>
+              </View>
+              <Text style={styles.scheduleText}>🕒 {location.horario}</Text>
+            </View>
+
+            <View style={styles.tagContainer}>
+              {location.servicios.map(servicio => (
+                <View key={servicio} style={styles.tag}>
+                  <Text style={styles.tagText}>{servicio}</Text>
+                </View>
+              ))}
+            </View>
+          </TouchableOpacity>
+        ))}
     </ScrollView>
   );
 
   const ServicioTab = () => (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>🎓 Servicio Social</Text>
-        <View style={styles.progressContainer}>
-          <Text style={styles.progressText}>
-            {userProfile.horasServicio}/{userProfile.horasRequeridas} horas
-          </Text>
-          <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: `${(userProfile.horasServicio/userProfile.horasRequeridas)*100}%` }]} />
-          </View>
+        <Text style={styles.headerName}>🎓 Servicio Social</Text>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Progreso de Horas</Text>
+        <View style={styles.progressBar}>
+          <View
+            style={[
+              styles.progressFill,
+              { width: `${(userProfile.horasServicio / userProfile.horasRequeridas) * 100}%` }
+            ]}
+          />
         </View>
+        <Text style={styles.progressLabel}>
+          {userProfile.horasServicio} de {userProfile.horasRequeridas} horas completadas
+        </Text>
       </View>
 
       {proyectosServicio.map(proyecto => (
@@ -186,28 +313,27 @@ const VidaUAQApp = () => {
           <View style={styles.cardHeader}>
             <Text style={styles.cardTitle}>{proyecto.titulo}</Text>
             <View style={styles.statusBadge}>
-              <Text style={styles.statusText}>{proyecto.status}</Text>
+              <Text style={styles.statusBadgeText}>{proyecto.status}</Text>
             </View>
           </View>
-          
-          <Text style={styles.organization}>🏢 {proyecto.organizacion}</Text>
-          <Text style={styles.description}>{proyecto.descripcion}</Text>
-          
+
+          <Text style={styles.description}>🏢 {proyecto.organizacion}</Text>
+
           <View style={styles.metaRow}>
-            <Text style={styles.modalidad}>{proyecto.modalidad}</Text>
-            <Text style={styles.horas}>{proyecto.horas}h</Text>
+            <Text style={styles.scheduleText}>{proyecto.modalidad}</Text>
+            <Text style={styles.scheduleText}>{proyecto.horas} horas</Text>
           </View>
-          
-          <View style={styles.techTags}>
+
+          <View style={styles.tagContainer}>
             {proyecto.tecnologias.map(tech => (
-              <View key={tech} style={styles.techTag}>
-                <Text style={styles.techText}>{tech}</Text>
+              <View key={tech} style={styles.tag}>
+                <Text style={styles.tagText}>{tech}</Text>
               </View>
             ))}
           </View>
-          
+
           <TouchableOpacity style={styles.applyButton}>
-            <Text style={styles.applyText}>Postularse</Text>
+            <Text style={styles.applyButtonText}>Postularse</Text>
           </TouchableOpacity>
         </View>
       ))}
@@ -217,202 +343,203 @@ const VidaUAQApp = () => {
   const EventosTab = () => (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>📅 Eventos del Campus</Text>
+        <Text style={styles.headerName}>📅 Eventos del Campus</Text>
       </View>
 
-      {eventos.map(evento => (
-        <View key={evento.id} style={styles.eventCard}>
-          <View style={styles.eventDate}>
-            <Text style={styles.eventMonth}>SEP</Text>
-            <Text style={styles.eventDay}>{new Date(evento.fecha).getDate()}</Text>
-          </View>
-          
-          <View style={styles.eventInfo}>
-            <Text style={styles.eventTitle}>{evento.titulo}</Text>
-            <View style={styles.eventMeta}>
-              <Text style={styles.clockIcon}>🕐</Text>
-              <Text style={styles.eventTime}>{evento.hora}</Text>
-              <Text style={styles.locationIcon}>📍</Text>
-              <Text style={styles.eventLocation}>{evento.lugar}</Text>
+      {eventos.map(evento => {
+        const date = new Date(evento.fecha + 'T00:00:00');
+        const day = date.getDate();
+        const month = date.toLocaleString('es-MX', { month: 'short' }).replace('.', '');
+        return (
+          <View key={evento.id} style={styles.card}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={styles.eventDate}>
+                <Text style={styles.eventDay}>{day}</Text>
+                <Text style={styles.eventMonth}>{month}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.cardTitle}>{evento.titulo}</Text>
+                <Text style={styles.description}>{evento.lugar} - {evento.hora}</Text>
+              </View>
             </View>
-            <Text style={styles.eventDesc}>{evento.descripcion}</Text>
           </View>
-        </View>
-      ))}
+        );
+      })}
     </ScrollView>
   );
 
   const PerfilTab = () => (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>👤 Mi Perfil</Text>
+        <Text style={styles.headerName}>👤 Mi Perfil</Text>
       </View>
-
       <View style={styles.profileCard}>
-        <View style={styles.profileHeader}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>JP</Text>
-          </View>
-          <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>{userProfile.nombre}</Text>
-            <Text style={styles.profileCareer}>{userProfile.carrera}</Text>
-            <Text style={styles.profileSemester}>{userProfile.semestre} semestre</Text>
-          </View>
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>{userProfile.nombre.split(' ').map(n => n[0]).join('')}</Text>
         </View>
+        <Text style={styles.profileName}>{userProfile.nombre}</Text>
+        <Text style={styles.profileCareer}>{userProfile.carrera}</Text>
+        <Text style={styles.profileSemester}>{userProfile.semestre} semestre</Text>
 
-        <View style={styles.stats}>
-          <View style={styles.stat}>
-            <Text style={styles.statIcon}>🏆</Text>
-            <Text style={styles.statNumber}>{userProfile.horasServicio}</Text>
-            <Text style={styles.statLabel}>Horas completadas</Text>
+        <View style={styles.statsContainer}>
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{userProfile.horasServicio}</Text>
+            <Text style={styles.statLabel}>Completadas</Text>
           </View>
-          <View style={styles.stat}>
-            <Text style={styles.statIcon}>⏰</Text>
-            <Text style={styles.statNumber}>{userProfile.horasRequeridas - userProfile.horasServicio}</Text>
-            <Text style={styles.statLabel}>Horas restantes</Text>
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{userProfile.horasRequeridas - userProfile.horasServicio}</Text>
+            <Text style={styles.statLabel}>Restantes</Text>
           </View>
-          <View style={styles.stat}>
-            <Text style={styles.statIcon}>❤️</Text>
-            <Text style={styles.statNumber}>{favorites.length}</Text>
+          <View style={styles.statItem}>
+            <Text style={styles.statValue}>{favorites.length}</Text>
             <Text style={styles.statLabel}>Favoritos</Text>
           </View>
         </View>
+
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <Text style={styles.logoutButtonText}>Cerrar sesión</Text>
+        </TouchableOpacity>
       </View>
     </ScrollView>
   );
 
-  return (
-    <View style={styles.app}>
-      <View style={styles.content}>
-        {activeTab === 'campus' && <CampusTab />}
-        {activeTab === 'servicio' && <ServicioTab />}
-        {activeTab === 'eventos' && <EventosTab />}
-        {activeTab === 'perfil' && <PerfilTab />}
+  const TabBar = () => {
+    const tabs = [
+      { key: 'campus', icon: '🏛', label: 'Campus' },
+      { key: 'servicio', icon: '🎓', label: 'Servicio' },
+      { key: 'eventos', icon: '📅', label: 'Eventos' },
+      { key: 'perfil', icon: '👤', label: 'Perfil' }
+    ];
+    return (
+      <View style={styles.tabBarContainer}>
+        <View style={styles.tabBar}>
+          {tabs.map(tab => (
+            <TouchableOpacity key={tab.key} style={styles.tabItem} onPress={() => setActiveTab(tab.key)}>
+              {activeTab === tab.key && <View style={styles.activeTabPill} />}
+              <Text style={styles.tabIcon}>{tab.icon}</Text>
+              <Text style={[styles.tabLabel, activeTab === tab.key && styles.activeTabLabel]}>{tab.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
+    );
+  };
 
-      <View style={styles.tabBar}>
-        {[
-          { key: 'campus', icon: '🏛️', label: 'Campus' },
-          { key: 'servicio', icon: '🎓', label: 'Servicio' },
-          { key: 'eventos', icon: '📅', label: 'Eventos' },
-          { key: 'perfil', icon: '👤', label: 'Perfil' }
-        ].map(tab => (
-          <TouchableOpacity
-            key={tab.key}
-            style={styles.tab}
-            onPress={() => setActiveTab(tab.key)}
-          >
-            <Text style={[styles.tabIcon, activeTab === tab.key && styles.activeTabIcon]}>
-              {tab.icon}
-            </Text>
-            <Text style={[styles.tabText, activeTab === tab.key && styles.activeTabText]}>
-              {tab.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+  // App autenticada
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
+      <StatusBar barStyle="light-content" backgroundColor={theme.colors.background} />
+      {activeTab === 'campus' && <CampusTab />}
+      {activeTab === 'servicio' && <ServicioTab />}
+      {activeTab === 'eventos' && <EventosTab />}
+      {activeTab === 'perfil' && <PerfilTab />}
+      <TabBar />
 
       <Modal visible={!!selectedLocation} animationType="slide" transparent>
         {selectedLocation && (
-          <View style={styles.modal}>
+          <View style={styles.modalBackdrop}>
             <View style={styles.modalContent}>
-              <TouchableOpacity style={styles.closeBtn} onPress={() => setSelectedLocation(null)}>
-                <Text style={styles.closeText}>✕</Text>
+              <TouchableOpacity style={styles.closeButton} onPress={() => setSelectedLocation(null)}>
+                <Text style={{ fontWeight: 'bold' }}>✕</Text>
               </TouchableOpacity>
               <Text style={styles.modalTitle}>{selectedLocation.nombre}</Text>
-              <Text style={styles.modalDesc}>{selectedLocation.descripcion}</Text>
-              <Text style={styles.modalSchedule}>🕒 {selectedLocation.horario}</Text>
-              <TouchableOpacity style={styles.modalButton}>
-                <Text style={styles.modalButtonText}>Ver en mapa</Text>
-              </TouchableOpacity>
+              <Text style={styles.description}>{selectedLocation.descripcion}</Text>
+              <Text style={[styles.scheduleText, { marginVertical: theme.spacing.md }]}>🕒 {selectedLocation.horario}</Text>
+              <TouchableOpacity style={styles.applyButton}><Text style={styles.applyButtonText}>Ver en mapa</Text></TouchableOpacity>
             </View>
           </View>
         )}
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 };
 
+// --- Estilos ---
 const styles = StyleSheet.create({
-  app: { flex: 1, backgroundColor: '#2d3436' },
-  content: { flex: 1 },
-  container: { flex: 1, backgroundColor: '#2d3436' },
-  header: { padding: 20, paddingTop: 50, backgroundColor: '#1e272e' },
-  headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#74b9ff', marginBottom: 5 },
-  subtitle: { fontSize: 14, color: '#636e72' },
-  searchBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1e272e', margin: 15, padding: 12, borderRadius: 10, borderWidth: 1, borderColor: '#40505f' },
-  searchIcon: { fontSize: 18, marginRight: 10 },
-  searchInput: { flex: 1, fontSize: 16, color: '#ddd' },
-  card: { backgroundColor: '#1e272e', margin: 15, marginTop: 0, padding: 15, borderRadius: 12, borderWidth: 1, borderColor: '#40505f' },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  titleRow: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-  categoryIcon: { fontSize: 18, marginRight: 8 },
-  cardTitle: { fontSize: 16, fontWeight: 'bold', color: '#ddd' },
-  heartIcon: { fontSize: 20 },
-  description: { fontSize: 14, color: '#636e72', marginBottom: 10 },
-  metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  rating: { flexDirection: 'row', alignItems: 'center' },
-  star: { fontSize: 14, marginRight: 2 },
-  ratingText: { color: '#ddd', marginLeft: 5, fontSize: 14 },
-  schedule: { flexDirection: 'row', alignItems: 'center' },
-  clockIcon: { fontSize: 14, marginRight: 4 },
-  scheduleText: { color: '#636e72', fontSize: 12 },
-  services: { flexDirection: 'row', flexWrap: 'wrap' },
-  serviceTag: { backgroundColor: '#40505f', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, marginRight: 6, marginBottom: 4 },
-  serviceText: { color: '#74b9ff', fontSize: 12 },
-  progressContainer: { marginTop: 10 },
-  progressText: { color: '#74b9ff', fontSize: 16, fontWeight: '600', marginBottom: 5 },
-  progressBar: { height: 8, backgroundColor: '#40505f', borderRadius: 4 },
-  progressFill: { height: '100%', backgroundColor: '#00b894', borderRadius: 4 },
-  organization: { fontSize: 14, color: '#74b9ff', marginBottom: 8 },
-  statusBadge: { backgroundColor: '#00b894', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
-  statusText: { color: '#fff', fontSize: 12, fontWeight: '600' },
-  modalidad: { color: '#74b9ff', fontSize: 14 },
-  horas: { color: '#636e72', fontSize: 14 },
-  techTags: { flexDirection: 'row', flexWrap: 'wrap', marginVertical: 8 },
-  techTag: { backgroundColor: '#40505f', paddingHorizontal: 6, paddingVertical: 3, borderRadius: 6, marginRight: 6, marginBottom: 4 },
-  techText: { color: '#74b9ff', fontSize: 11 },
-  applyButton: { backgroundColor: '#74b9ff', padding: 12, borderRadius: 8, alignItems: 'center' },
-  applyText: { color: '#fff', fontWeight: 'bold' },
-  eventCard: { backgroundColor: '#1e272e', margin: 15, marginTop: 0, padding: 15, borderRadius: 12, borderWidth: 1, borderColor: '#40505f', flexDirection: 'row' },
-  eventDate: { backgroundColor: '#74b9ff', width: 50, height: 50, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginRight: 15 },
-  eventMonth: { color: '#fff', fontSize: 10, fontWeight: 'bold' },
-  eventDay: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
-  eventInfo: { flex: 1 },
-  eventTitle: { fontSize: 16, fontWeight: 'bold', color: '#ddd', marginBottom: 5 },
-  eventMeta: { flexDirection: 'row', alignItems: 'center', marginBottom: 5 },
-  eventTime: { color: '#636e72', marginLeft: 4, marginRight: 10, fontSize: 12 },
-  locationIcon: { fontSize: 14, marginRight: 4 },
-  eventLocation: { color: '#636e72', fontSize: 12 },
-  eventDesc: { fontSize: 14, color: '#636e72' },
-  profileCard: { backgroundColor: '#1e272e', margin: 15, padding: 20, borderRadius: 12, borderWidth: 1, borderColor: '#40505f' },
-  profileHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
-  avatar: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#40505f', alignItems: 'center', justifyContent: 'center', marginRight: 15 },
-  avatarText: { color: '#74b9ff', fontSize: 18, fontWeight: 'bold' },
-  profileInfo: { flex: 1 },
-  profileName: { fontSize: 18, fontWeight: 'bold', color: '#ddd', marginBottom: 3 },
-  profileCareer: { fontSize: 14, color: '#74b9ff', marginBottom: 2 },
-  profileSemester: { fontSize: 12, color: '#636e72' },
-  stats: { flexDirection: 'row', justifyContent: 'space-around' },
-  stat: { alignItems: 'center' },
-  statIcon: { fontSize: 24, marginBottom: 5 },
-  statNumber: { fontSize: 18, fontWeight: 'bold', color: '#ddd', marginBottom: 2 },
-  statLabel: { fontSize: 10, color: '#636e72', textAlign: 'center' },
-  tabBar: { flexDirection: 'row', backgroundColor: '#1e272e', paddingBottom: 25, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#40505f' },
-  tab: { flex: 1, alignItems: 'center', paddingVertical: 8 },
-  tabIcon: { fontSize: 22, marginBottom: 4 },
-  activeTabIcon: { color: '#74b9ff' },
-  tabText: { fontSize: 11, color: '#636e72' },
-  activeTabText: { color: '#74b9ff', fontWeight: '600' },
-  modal: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: '#1e272e', padding: 20, borderTopLeftRadius: 20, borderTopRightRadius: 20 },
-  closeBtn: { position: 'absolute', top: 15, right: 15, width: 30, height: 30, borderRadius: 15, backgroundColor: '#40505f', alignItems: 'center', justifyContent: 'center', zIndex: 1 },
-  closeText: { color: '#ddd', fontSize: 16, fontWeight: 'bold' },
-  modalTitle: { fontSize: 20, fontWeight: 'bold', color: '#ddd', marginBottom: 10, marginTop: 15 },
-  modalDesc: { fontSize: 14, color: '#636e72', marginBottom: 10 },
-  modalSchedule: { fontSize: 14, color: '#74b9ff', marginBottom: 15 },
-  modalButton: { backgroundColor: '#74b9ff', padding: 15, borderRadius: 10, alignItems: 'center' },
-  modalButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' }
+  // LOGIN
+  loginContainer: { flex: 1, backgroundColor: theme.colors.background },
+  loginLogo: { ...theme.typography.h1, fontSize: 48, color: theme.colors.primary, textAlign: 'center', fontWeight: '900' },
+  loginTitle: { ...theme.typography.h2, textAlign: 'center', marginTop: theme.spacing.sm },
+  loginSubtitle: { ...theme.typography.body, color: theme.colors.subtext, textAlign: 'center', marginBottom: theme.spacing.lg * 2 },
+  inputGroup: { marginBottom: theme.spacing.md },
+  inputLabel: { ...theme.typography.caption, color: theme.colors.subtext, marginBottom: theme.spacing.sm },
+  textInput: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.md, padding: theme.spacing.md, ...theme.typography.body, color: theme.colors.text },
+  loginButton: { backgroundColor: theme.colors.primary, borderRadius: theme.borderRadius.md, padding: theme.spacing.md, alignItems: 'center', marginTop: theme.spacing.md },
+  loginButtonText: { color: theme.colors.white, fontWeight: 'bold', fontSize: 16 },
+  switchAuthContainer: { alignItems: 'center', marginTop: theme.spacing.md },
+  switchAuthText: { ...theme.typography.body, color: theme.colors.accent },
+
+  // Éxito de registro
+  successBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+  successCard: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.lg, padding: theme.spacing.lg, marginHorizontal: theme.spacing.lg, alignItems: 'center', width: '85%' },
+  successTitle: { ...theme.typography.h2, marginBottom: theme.spacing.sm, textAlign: 'center' },
+  successMsg: { ...theme.typography.body, color: theme.colors.subtext, textAlign: 'center' },
+  successBtn: { backgroundColor: theme.colors.primary, padding: theme.spacing.md, borderRadius: theme.borderRadius.md, marginTop: theme.spacing.lg, width: '100%', alignItems: 'center' },
+  successBtnText: { color: theme.colors.white, fontWeight: 'bold' },
+
+  // APP
+  container: { flex: 1, backgroundColor: theme.colors.background },
+  header: { padding: theme.spacing.md },
+  headerName: { ...theme.typography.h1 },
+  headerSubtitle: { ...theme.typography.body, color: theme.colors.subtext, marginTop: -4 },
+
+  searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.surface, marginHorizontal: theme.spacing.md, paddingHorizontal: theme.spacing.md, borderRadius: theme.borderRadius.md, marginBottom: theme.spacing.sm, ...theme.shadow },
+  searchInput: { flex: 1, ...theme.typography.body, paddingVertical: theme.spacing.md, color: theme.colors.text },
+
+  card: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.lg, padding: theme.spacing.md, marginHorizontal: theme.spacing.md, marginBottom: theme.spacing.md, ...theme.shadow },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing.sm },
+  cardTitle: { ...theme.typography.h3, flexShrink: 1 },
+  description: { ...theme.typography.body, color: theme.colors.subtext, marginVertical: theme.spacing.sm },
+  metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: theme.spacing.sm },
+  ratingContainer: { flexDirection: 'row', alignItems: 'center' },
+  ratingText: { ...theme.typography.body, color: theme.colors.subtext, marginLeft: theme.spacing.sm },
+  scheduleText: { ...theme.typography.caption, color: theme.colors.subtext },
+
+  tagContainer: { flexDirection: 'row', flexWrap: 'wrap', marginTop: theme.spacing.md },
+  tag: { backgroundColor: theme.colors.highlight, borderRadius: 6, paddingHorizontal: theme.spacing.sm, paddingVertical: 4, marginRight: theme.spacing.sm, marginBottom: theme.spacing.sm },
+  tagText: { ...theme.typography.caption, color: theme.colors.primary, fontWeight: '600' },
+
+  progressBar: { height: 8, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 4, marginTop: theme.spacing.md },
+  progressFill: { height: '100%', backgroundColor: theme.colors.primary, borderRadius: 4 },
+  progressLabel: { ...theme.typography.caption, alignSelf: 'flex-end', marginTop: theme.spacing.sm },
+
+  statusBadge: { backgroundColor: theme.colors.success, borderRadius: 50, paddingHorizontal: theme.spacing.sm, paddingVertical: 4 },
+  statusBadgeText: { color: theme.colors.white, ...theme.typography.caption, fontWeight: 'bold' },
+
+  applyButton: { backgroundColor: theme.colors.primary, borderRadius: theme.borderRadius.md, padding: theme.spacing.md, alignItems: 'center', marginTop: theme.spacing.md },
+  applyButtonText: { color: theme.colors.white, fontWeight: 'bold' },
+
+  eventDate: { alignItems: 'center', marginRight: theme.spacing.md, backgroundColor: theme.colors.highlight, padding: theme.spacing.sm, borderRadius: theme.borderRadius.md },
+  eventDay: { ...theme.typography.h1, color: theme.colors.primary },
+  eventMonth: { ...theme.typography.caption, textTransform: 'uppercase', color: theme.colors.primary, fontWeight: '600' },
+
+  profileCard: { backgroundColor: theme.colors.surface, marginHorizontal: theme.spacing.md, borderRadius: theme.borderRadius.lg, padding: theme.spacing.lg, alignItems: 'center', ...theme.shadow },
+  avatar: { width: 100, height: 100, borderRadius: 50, backgroundColor: theme.colors.primary, justifyContent: 'center', alignItems: 'center', marginBottom: theme.spacing.md },
+  avatarText: { ...theme.typography.h1, color: theme.colors.white },
+  profileName: { ...theme.typography.h2 },
+  profileCareer: { ...theme.typography.body, color: theme.colors.primary, marginVertical: theme.spacing.sm / 2 },
+  profileSemester: { ...theme.typography.caption },
+
+  statsContainer: { flexDirection: 'row', justifyContent: 'space-around', borderTopWidth: 1, borderColor: '#1E293B', marginTop: theme.spacing.md, paddingTop: theme.spacing.md, width: '100%' },
+  statItem: { alignItems: 'center', flex: 1 },
+  statValue: { ...theme.typography.h2, color: theme.colors.text },
+  statLabel: { ...theme.typography.caption, color: theme.colors.subtext },
+
+  logoutButton: { backgroundColor: theme.colors.danger, borderRadius: theme.borderRadius.md, padding: theme.spacing.md, alignItems: 'center', marginTop: theme.spacing.lg, width: '100%' },
+  logoutButtonText: { color: theme.colors.white, fontWeight: 'bold' },
+
+  tabBarContainer: { paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.md, backgroundColor: theme.colors.background },
+  tabBar: { flexDirection: 'row', backgroundColor: theme.colors.surface, borderRadius: 50, padding: theme.spacing.sm, ...theme.shadow },
+  tabItem: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: theme.spacing.sm, position: 'relative' },
+  tabIcon: { fontSize: 24 },
+  tabLabel: { ...theme.typography.caption, marginTop: 4 },
+  activeTabLabel: { color: theme.colors.primary, fontWeight: '700' },
+  activeTabPill: { position: 'absolute', backgroundColor: theme.colors.highlight, borderRadius: 30, width: '90%', height: '100%', zIndex: -1 },
+
+  modalBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' },
+  modalContent: { backgroundColor: theme.colors.surface, borderTopLeftRadius: theme.borderRadius.lg, borderTopRightRadius: theme.borderRadius.lg, padding: theme.spacing.lg },
+  modalTitle: { ...theme.typography.h2, marginBottom: theme.spacing.sm },
+  closeButton: { position: 'absolute', top: theme.spacing.md, right: theme.spacing.md, backgroundColor: theme.colors.background, width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' }
 });
 
 export default VidaUAQApp;
