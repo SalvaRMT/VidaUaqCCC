@@ -18,6 +18,7 @@ const theme = {
     success: '#22C55E',
     highlight: 'rgba(34, 211, 238, 0.15)',
     danger: '#EF4444',
+    muted: '#334155',
   },
   spacing: { sm: 8, md: 16, lg: 24 },
   typography: {
@@ -44,10 +45,37 @@ const campusLocations = [
   { id: 2, nombre: 'Lab de Redes', categoria: 'Laboratorio', descripcion: 'Laboratorio con equipos Cisco para networking', horario: '8:00 AM - 6:00 PM', rating: 4.5, servicios: ['Equipos Cisco', 'Simuladores'], icon: '🔬' },
   { id: 3, nombre: 'Cafetería FI "El comal++"', categoria: 'Comida', descripcion: 'Cafetería estudiantil con precios accesibles', horario: '7:30 AM - 4:00 PM', rating: 4.2, servicios: ['WiFi', 'Precios estudiante'], icon: '☕' }
 ];
+
+// 👇 Agregué requisitos/actividades/horarioDetallado
 const proyectosServicio = [
-  { id: 1, titulo: 'Desarrollo Web para ONG', organizacion: 'Fundación Educativa Querétaro', descripcion: 'Crear sitio web con React para organización educativa', modalidad: 'Híbrido', horas: 150, tecnologias: ['React', 'Node.js', 'MongoDB'], status: 'Disponible' },
-  { id: 2, titulo: 'Sistema Hospitalario', organizacion: 'Hospital General', descripcion: 'Sistema de inventario médico', modalidad: 'Presencial', horas: 200, tecnologias: ['Java', 'Spring', 'PostgreSQL'], status: 'Disponible' }
+  {
+    id: 1,
+    titulo: 'Desarrollo Web para ONG',
+    organizacion: 'Fundación Educativa Querétaro',
+    descripcion: 'Crear sitio web con React para organización educativa',
+    modalidad: 'Híbrido',
+    horas: 150,
+    tecnologias: ['React', 'Node.js', 'MongoDB'],
+    status: 'Disponible',
+    requisitos: ['Kardex con 70% créditos', 'Constancia de seguro facultativo', 'Carta de motivos', 'Disponibilidad 15 hrs/sem'],
+    actividades: ['Desarrollar landing y dashboard', 'Integración con API REST', 'Soporte y documentación', 'Revisiones semanales con la ONG'],
+    horarioDetallado: 'Lunes a Viernes, 9:00–13:00 (flexible remoto/presencial)'
+  },
+  {
+    id: 2,
+    titulo: 'Sistema Hospitalario',
+    organizacion: 'Hospital General',
+    descripcion: 'Sistema de inventario médico',
+    modalidad: 'Presencial',
+    horas: 200,
+    tecnologias: ['Java', 'Spring', 'PostgreSQL'],
+    status: 'Disponible',
+    requisitos: ['Carta presentación de la Facultad', 'Identificación vigente', 'Compromiso de confidencialidad', 'Disponibilidad 20 hrs/sem'],
+    actividades: ['Captura y control de stock', 'Reportes y consultas', 'Pruebas y soporte a usuarios', 'Capacitación al personal'],
+    horarioDetallado: 'Lunes a Viernes, 8:00–12:00 en sitio'
+  }
 ];
+
 const eventos = [
   { id: 1, titulo: 'Hackathon FI 2025', fecha: '2025-09-15', hora: '9:00 AM', lugar: 'Aula Magna', descripcion: '48 horas de programación intensiva' },
   { id: 2, titulo: 'Conferencia IA', fecha: '2025-09-20', hora: '4:00 PM', lugar: 'Aula Magna', descripcion: 'Experto de Google hablará sobre IA' }
@@ -68,6 +96,11 @@ const VidaUAQApp = () => {
   const [searchText, setSearchText] = useState('');
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [favorites, setFavorites] = useState([2]);
+
+  // Servicio Social: postulaciones y modales
+  const [applyModalProject, setApplyModalProject] = useState(null); // proyecto seleccionado para ver requisitos
+  const [appliedIds, setAppliedIds] = useState(new Set());          // ids ya postulados
+  const [appliedSuccessVisible, setAppliedSuccessVisible] = useState(false);
 
   const toggleFavorite = (id) => {
     setFavorites(prev => prev.includes(id) ? prev.filter(fav => fav !== id) : [...prev, id]);
@@ -91,10 +124,7 @@ const VidaUAQApp = () => {
     }
 
     if (authMode === 'signup') {
-      // No iniciamos sesión; mostramos éxito
       setSignupSuccess(true);
-      // Conservamos el correo para que lo use en el login
-      // Solo limpiamos contraseñas y nombre
       setAuthPassword('');
       setAuthPassword2('');
       setAuthName('');
@@ -125,7 +155,7 @@ const VidaUAQApp = () => {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, justifyContent: 'center' }}>
         <ScrollView
           contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingBottom: theme.spacing.lg }}
-          keyboardShouldPersistTaps="always"   // <- evita que se cierre el teclado
+          keyboardShouldPersistTaps="always"
         >
           <View style={{ padding: theme.spacing.lg }}>
             <Text style={styles.loginLogo}>UAQ</Text>
@@ -216,7 +246,7 @@ const VidaUAQApp = () => {
               style={styles.successBtn}
               onPress={() => {
                 setSignupSuccess(false);
-                setAuthMode('login'); // regresar al login
+                setAuthMode('login');
               }}
             >
               <Text style={styles.successBtnText}>Volver al inicio</Text>
@@ -287,6 +317,8 @@ const VidaUAQApp = () => {
     </ScrollView>
   );
 
+  const isApplied = (id) => appliedIds.has(id);
+
   const ServicioTab = () => (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
@@ -308,35 +340,42 @@ const VidaUAQApp = () => {
         </Text>
       </View>
 
-      {proyectosServicio.map(proyecto => (
-        <View key={proyecto.id} style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>{proyecto.titulo}</Text>
-            <View style={styles.statusBadge}>
-              <Text style={styles.statusBadgeText}>{proyecto.status}</Text>
-            </View>
-          </View>
-
-          <Text style={styles.description}>🏢 {proyecto.organizacion}</Text>
-
-          <View style={styles.metaRow}>
-            <Text style={styles.scheduleText}>{proyecto.modalidad}</Text>
-            <Text style={styles.scheduleText}>{proyecto.horas} horas</Text>
-          </View>
-
-          <View style={styles.tagContainer}>
-            {proyecto.tecnologias.map(tech => (
-              <View key={tech} style={styles.tag}>
-                <Text style={styles.tagText}>{tech}</Text>
+      {proyectosServicio.map(proyecto => {
+        const applied = isApplied(proyecto.id);
+        return (
+          <View key={proyecto.id} style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>{proyecto.titulo}</Text>
+              <View style={[styles.statusBadge, { backgroundColor: theme.colors.success }]}>
+                <Text style={styles.statusBadgeText}>{proyecto.status}</Text>
               </View>
-            ))}
-          </View>
+            </View>
 
-          <TouchableOpacity style={styles.applyButton}>
-            <Text style={styles.applyButtonText}>Postularse</Text>
-          </TouchableOpacity>
-        </View>
-      ))}
+            <Text style={styles.description}>🏢 {proyecto.organizacion}</Text>
+
+            <View style={styles.metaRow}>
+              <Text style={styles.scheduleText}>{proyecto.modalidad}</Text>
+              <Text style={styles.scheduleText}>{proyecto.horas} horas</Text>
+            </View>
+
+            <View style={styles.tagContainer}>
+              {proyecto.tecnologias.map(tech => (
+                <View key={tech} style={styles.tag}>
+                  <Text style={styles.tagText}>{tech}</Text>
+                </View>
+              ))}
+            </View>
+
+            <TouchableOpacity
+              disabled={applied}
+              style={[styles.applyButton, applied && { backgroundColor: theme.colors.muted }]}
+              onPress={() => setApplyModalProject(proyecto)}
+            >
+              <Text style={styles.applyButtonText}>{applied ? 'Postulado' : 'Postularse'}</Text>
+            </TouchableOpacity>
+          </View>
+        );
+      })}
     </ScrollView>
   );
 
@@ -435,6 +474,7 @@ const VidaUAQApp = () => {
       {activeTab === 'perfil' && <PerfilTab />}
       <TabBar />
 
+      {/* Modal de lugar (campus) */}
       <Modal visible={!!selectedLocation} animationType="slide" transparent>
         {selectedLocation && (
           <View style={styles.modalBackdrop}>
@@ -449,6 +489,69 @@ const VidaUAQApp = () => {
             </View>
           </View>
         )}
+      </Modal>
+
+      {/* Modal de requisitos/actividades/horario para postularse */}
+      <Modal transparent visible={!!applyModalProject} animationType="fade">
+        <View style={styles.successBackdrop}>
+          {applyModalProject && (
+            <View style={[styles.successCard, { alignItems: 'flex-start' }]}>
+              <Text style={[styles.successTitle, { alignSelf: 'center' }]}>📋 Detalles de la Postulación</Text>
+              <Text style={[styles.modalProjectTitle]}>{applyModalProject.titulo}</Text>
+              <Text style={[styles.description]}>🏢 {applyModalProject.organizacion}</Text>
+
+              <Text style={styles.modalSectionTitle}>Requisitos</Text>
+              {applyModalProject.requisitos.map((req, idx) => (
+                <Text key={`r-${idx}`} style={styles.modalListItem}>• {req}</Text>
+              ))}
+
+              <Text style={[styles.modalSectionTitle, { marginTop: theme.spacing.md }]}>Actividades</Text>
+              {applyModalProject.actividades.map((act, idx) => (
+                <Text key={`a-${idx}`} style={styles.modalListItem}>• {act}</Text>
+              ))}
+
+              <Text style={[styles.modalSectionTitle, { marginTop: theme.spacing.md }]}>Horario</Text>
+              <Text style={styles.modalListItem}>🕒 {applyModalProject.horarioDetallado}</Text>
+
+              <View style={{ flexDirection: 'row', gap: 12, width: '100%', marginTop: theme.spacing.lg }}>
+                <TouchableOpacity
+                  style={[styles.dialogBtn, { backgroundColor: theme.colors.muted }]}
+                  onPress={() => setApplyModalProject(null)}
+                >
+                  <Text style={styles.dialogBtnText}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.dialogBtn, { backgroundColor: theme.colors.primary, flex: 1 }]}
+                  onPress={() => {
+                    setApplyModalProject(null);
+                    setAppliedIds(prev => new Set([...Array.from(prev), applyModalProject.id]));
+                    setAppliedSuccessVisible(true);
+                  }}
+                >
+                  <Text style={styles.dialogBtnText}>Aceptar</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+        </View>
+      </Modal>
+
+      {/* Modal de confirmación de postulación */}
+      <Modal transparent visible={appliedSuccessVisible} animationType="fade">
+        <View style={styles.successBackdrop}>
+          <View style={styles.successCard}>
+            <Text style={styles.successTitle}>🎉 ¡Te has postulado!</Text>
+            <Text style={styles.successMsg}>
+              Te has postulado, espera que te contactemos para ver si te aceptan.
+            </Text>
+            <TouchableOpacity
+              style={styles.successBtn}
+              onPress={() => setAppliedSuccessVisible(false)}
+            >
+              <Text style={styles.successBtnText}>Entendido</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </Modal>
     </SafeAreaView>
   );
@@ -470,8 +573,8 @@ const styles = StyleSheet.create({
   switchAuthText: { ...theme.typography.body, color: theme.colors.accent },
 
   // Éxito de registro
-  successBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
-  successCard: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.lg, padding: theme.spacing.lg, marginHorizontal: theme.spacing.lg, alignItems: 'center', width: '85%' },
+  successBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: theme.spacing.lg },
+  successCard: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.lg, padding: theme.spacing.lg, alignItems: 'center', width: '100%' },
   successTitle: { ...theme.typography.h2, marginBottom: theme.spacing.sm, textAlign: 'center' },
   successMsg: { ...theme.typography.body, color: theme.colors.subtext, textAlign: 'center' },
   successBtn: { backgroundColor: theme.colors.primary, padding: theme.spacing.md, borderRadius: theme.borderRadius.md, marginTop: theme.spacing.lg, width: '100%', alignItems: 'center' },
@@ -503,7 +606,7 @@ const styles = StyleSheet.create({
   progressFill: { height: '100%', backgroundColor: theme.colors.primary, borderRadius: 4 },
   progressLabel: { ...theme.typography.caption, alignSelf: 'flex-end', marginTop: theme.spacing.sm },
 
-  statusBadge: { backgroundColor: theme.colors.success, borderRadius: 50, paddingHorizontal: theme.spacing.sm, paddingVertical: 4 },
+  statusBadge: { borderRadius: 50, paddingHorizontal: theme.spacing.sm, paddingVertical: 4 },
   statusBadgeText: { color: theme.colors.white, ...theme.typography.caption, fontWeight: 'bold' },
 
   applyButton: { backgroundColor: theme.colors.primary, borderRadius: theme.borderRadius.md, padding: theme.spacing.md, alignItems: 'center', marginTop: theme.spacing.md },
@@ -539,7 +642,14 @@ const styles = StyleSheet.create({
   modalBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' },
   modalContent: { backgroundColor: theme.colors.surface, borderTopLeftRadius: theme.borderRadius.lg, borderTopRightRadius: theme.borderRadius.lg, padding: theme.spacing.lg },
   modalTitle: { ...theme.typography.h2, marginBottom: theme.spacing.sm },
-  closeButton: { position: 'absolute', top: theme.spacing.md, right: theme.spacing.md, backgroundColor: theme.colors.background, width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' }
+  closeButton: { position: 'absolute', top: theme.spacing.md, right: theme.spacing.md, backgroundColor: theme.colors.background, width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
+
+  // Modal de proyecto (Postularse)
+  modalProjectTitle: { ...theme.typography.h3, marginTop: theme.spacing.sm, marginBottom: theme.spacing.sm, alignSelf: 'flex-start' },
+  modalSectionTitle: { ...theme.typography.h3, marginTop: theme.spacing.sm },
+  modalListItem: { ...theme.typography.body, color: theme.colors.subtext, marginTop: 4 },
+  dialogBtn: { padding: theme.spacing.md, borderRadius: theme.borderRadius.md, flex: 1, alignItems: 'center' },
+  dialogBtnText: { color: theme.colors.white, fontWeight: '700' },
 });
 
 export default VidaUAQApp;
