@@ -8,23 +8,11 @@
     "ios": "expo start --ios",
     "web": "expo start --web"
   },
-<<<<<<< Updated upstream
   "dependencies": {
-    "expo": "~54.0.0",
+    "expo": "~53.0.22",
     "expo-status-bar": "~2.2.3",
     "react": "19.0.0",
-    "react-dom": "19.1.0",
-    "react-native": "0.79.6",
-    "react-native-web": "^0.21.0"
-=======
-"dependencies": {
-  "expo": "~54.0.0",
-  "expo-status-bar": "~2.2.3",
-  "react": "18.2.0",
-  "react-dom": "18.2.0",
-  "react-native": "0.76.1",
-  "react-native-web": "~0.19.12"
->>>>>>> Stashed changes
+    "react-native": "0.79.6"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"
