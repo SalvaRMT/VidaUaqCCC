@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, TextInput, Modal,
-  StyleSheet, SafeAreaView, StatusBar, KeyboardAvoidingView, Platform, Alert
+  StyleSheet, SafeAreaView, StatusBar, KeyboardAvoidingView, Platform, Animated
 } from 'react-native';
 
 // --- Sistema de Diseño (Theme) ---
@@ -46,7 +46,7 @@ const campusLocations = [
   { id: 3, nombre: 'Cafetería FI "El comal++"', categoria: 'Comida', descripcion: 'Cafetería estudiantil con precios accesibles', horario: '7:30 AM - 4:00 PM', rating: 4.2, servicios: ['WiFi', 'Precios estudiante'], icon: '☕' }
 ];
 
-// 👇 Agregué requisitos/actividades/horarioDetallado
+// 👇 Requisitos/actividades/horarioDetallado
 const proyectosServicio = [
   {
     id: 1,
@@ -81,7 +81,49 @@ const eventos = [
   { id: 2, titulo: 'Conferencia IA', fecha: '2025-09-20', hora: '4:00 PM', lugar: 'Aula Magna', descripcion: 'Experto de Google hablará sobre IA' }
 ];
 
+// --- Componente de Alerta Personalizada ---
+const CustomAlert = ({ visible, title, message, onClose }) => (
+  <Modal visible={visible} transparent animationType="fade">
+    <View style={styles.alertBackdrop}>
+      <View style={styles.alertCard}>
+        <Text style={styles.alertTitle}>⚠️ {title}</Text>
+        <Text style={styles.alertMessage}>{message}</Text>
+        <TouchableOpacity style={styles.alertButton} onPress={onClose}>
+          <Text style={styles.alertButtonText}>Entendido</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </Modal>
+);
+
+// --- Pantalla de Carga (splash) ---
+const LoadingScreen = () => {
+  const opacity = useState(new Animated.Value(0))[0];
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, { toValue: 1, duration: 1000, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.7, duration: 1000, useNativeDriver: true }),
+      ])
+    ).start();
+  }, [opacity]);
+
+  return (
+    <View style={styles.loadingContainer}>
+      <StatusBar barStyle="light-content" backgroundColor={theme.colors.background} />
+      <Animated.Image
+        source={require('./assets/logo.png')}
+        style={[styles.loadingLogoImage, { opacity }]}
+      />
+    </View>
+  );
+};
+
 const VidaUAQApp = () => {
+  // App Loading
+  const [isLoading, setIsLoading] = useState(true);
+
   // Auth
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'signup'
@@ -89,7 +131,11 @@ const VidaUAQApp = () => {
   const [authPassword, setAuthPassword] = useState('');
   const [authName, setAuthName] = useState('');
   const [authPassword2, setAuthPassword2] = useState('');
-  const [signupSuccess, setSignupSuccess] = useState(false); // <-- modal éxito
+  const [signupSuccess, setSignupSuccess] = useState(false); // modal éxito
+
+  // Custom Alert
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertInfo, setAlertInfo] = useState({ title: '', message: '' });
 
   // App UI
   const [activeTab, setActiveTab] = useState('campus');
@@ -102,6 +148,17 @@ const VidaUAQApp = () => {
   const [appliedIds, setAppliedIds] = useState(new Set());          // ids ya postulados
   const [appliedSuccessVisible, setAppliedSuccessVisible] = useState(false);
 
+  // Simula carga inicial
+  useEffect(() => {
+    const t = setTimeout(() => setIsLoading(false), 2000);
+    return () => clearTimeout(t);
+  }, []);
+
+  const showAlert = (title, message) => {
+    setAlertInfo({ title, message });
+    setAlertVisible(true);
+  };
+
   const toggleFavorite = (id) => {
     setFavorites(prev => prev.includes(id) ? prev.filter(fav => fav !== id) : [...prev, id]);
   };
@@ -112,14 +169,14 @@ const VidaUAQApp = () => {
     ));
   };
 
-  // Demo de login/registro (sin backend)
+  // Demo de login/registro
   const handleAuthSubmit = () => {
     if (!authEmail || !authPassword || (authMode === 'signup' && (!authName || !authPassword2))) {
-      Alert.alert('Completa los campos', 'Todos los campos son obligatorios.');
+      showAlert('Campos incompletos', 'Por favor, rellena todos los campos para continuar.');
       return;
     }
     if (authMode === 'signup' && authPassword !== authPassword2) {
-      Alert.alert('Contraseñas', 'Las contraseñas no coinciden.');
+      showAlert('Error de Contraseña', 'Las contraseñas no coinciden. Inténtalo de nuevo.');
       return;
     }
 
@@ -147,6 +204,8 @@ const VidaUAQApp = () => {
     setSelectedLocation(null);
     setFavorites([2]);
   };
+
+  const isApplied = (id) => appliedIds.has(id);
 
   // --- Pantalla de Login/Crear cuenta ---
   const LoginScreen = () => (
@@ -254,10 +313,19 @@ const VidaUAQApp = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Alerta personalizada */}
+      <CustomAlert
+        visible={alertVisible}
+        title={alertInfo.title}
+        message={alertInfo.message}
+        onClose={() => setAlertVisible(false)}
+      />
     </SafeAreaView>
   );
 
-  // Si no está autenticado, renderiza login/registro
+  // --- RENDERIZADO PRINCIPAL ---
+  if (isLoading) return <LoadingScreen />;
   if (!isAuthenticated) return <LoginScreen />;
 
   // --- Tabs ---
@@ -316,8 +384,6 @@ const VidaUAQApp = () => {
         ))}
     </ScrollView>
   );
-
-  const isApplied = (id) => appliedIds.has(id);
 
   const ServicioTab = () => (
     <ScrollView style={styles.container}>
@@ -559,6 +625,10 @@ const VidaUAQApp = () => {
 
 // --- Estilos ---
 const styles = StyleSheet.create({
+  // LOADING
+  loadingContainer: { flex: 1, backgroundColor: theme.colors.background, justifyContent: 'center', alignItems: 'center' },
+  loadingLogoImage: { width: 250, height: 250, resizeMode: 'contain' },
+
   // LOGIN
   loginContainer: { flex: 1, backgroundColor: theme.colors.background },
   loginLogo: { ...theme.typography.h1, fontSize: 48, color: theme.colors.primary, textAlign: 'center', fontWeight: '900' },
@@ -579,6 +649,14 @@ const styles = StyleSheet.create({
   successMsg: { ...theme.typography.body, color: theme.colors.subtext, textAlign: 'center' },
   successBtn: { backgroundColor: theme.colors.primary, padding: theme.spacing.md, borderRadius: theme.borderRadius.md, marginTop: theme.spacing.lg, width: '100%', alignItems: 'center' },
   successBtnText: { color: theme.colors.white, fontWeight: 'bold' },
+
+  // Custom Alert
+  alertBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' },
+  alertCard: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.lg, padding: theme.spacing.lg, marginHorizontal: theme.spacing.lg, width: '85%', ...theme.shadow },
+  alertTitle: { ...theme.typography.h3, color: theme.colors.text, marginBottom: theme.spacing.sm },
+  alertMessage: { ...theme.typography.body, color: theme.colors.subtext, lineHeight: 22 },
+  alertButton: { backgroundColor: theme.colors.primary, borderRadius: theme.borderRadius.md, padding: theme.spacing.md, alignItems: 'center', marginTop: theme.spacing.lg },
+  alertButtonText: { color: theme.colors.white, fontWeight: 'bold', fontSize: 16 },
 
   // APP
   container: { flex: 1, backgroundColor: theme.colors.background },
