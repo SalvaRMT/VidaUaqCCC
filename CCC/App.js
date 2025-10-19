@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, TouchableOpacity, ScrollView, TextInput, Modal, Image,
+  View, Text, TouchableOpacity, ScrollView, TextInput, Modal,
   StyleSheet, SafeAreaView, StatusBar, KeyboardAvoidingView, Platform, Animated
 } from 'react-native';
 
@@ -18,6 +18,7 @@ const theme = {
     success: '#22C55E',
     highlight: 'rgba(34, 211, 238, 0.15)',
     danger: '#EF4444',
+    muted: '#334155',
   },
   spacing: { sm: 8, md: 16, lg: 24 },
   typography: {
@@ -44,54 +45,80 @@ const campusLocations = [
   { id: 2, nombre: 'Lab de Redes', categoria: 'Laboratorio', descripcion: 'Laboratorio con equipos Cisco para networking', horario: '8:00 AM - 6:00 PM', rating: 4.5, servicios: ['Equipos Cisco', 'Simuladores'], icon: '🔬' },
   { id: 3, nombre: 'Cafetería FI "El comal++"', categoria: 'Comida', descripcion: 'Cafetería estudiantil con precios accesibles', horario: '7:30 AM - 4:00 PM', rating: 4.2, servicios: ['WiFi', 'Precios estudiante'], icon: '☕' }
 ];
+
+// 👇 Requisitos/actividades/horarioDetallado
 const proyectosServicio = [
-  { id: 1, titulo: 'Desarrollo Web para ONG', organizacion: 'Fundación Educativa Querétaro', descripcion: 'Crear sitio web con React para organización educativa', modalidad: 'Híbrido', horas: 150, tecnologias: ['React', 'Node.js', 'MongoDB'], status: 'Disponible' },
-  { id: 2, titulo: 'Sistema Hospitalario', organizacion: 'Hospital General', descripcion: 'Sistema de inventario médico', modalidad: 'Presencial', horas: 200, tecnologias: ['Java', 'Spring', 'PostgreSQL'], status: 'Disponible' }
+  {
+    id: 1,
+    titulo: 'Desarrollo Web para ONG',
+    organizacion: 'Fundación Educativa Querétaro',
+    descripcion: 'Crear sitio web con React para organización educativa',
+    modalidad: 'Híbrido',
+    horas: 150,
+    tecnologias: ['React', 'Node.js', 'MongoDB'],
+    status: 'Disponible',
+    requisitos: ['Kardex con 70% créditos', 'Constancia de seguro facultativo', 'Carta de motivos', 'Disponibilidad 15 hrs/sem'],
+    actividades: ['Desarrollar landing y dashboard', 'Integración con API REST', 'Soporte y documentación', 'Revisiones semanales con la ONG'],
+    horarioDetallado: 'Lunes a Viernes, 9:00–13:00 (flexible remoto/presencial)'
+  },
+  {
+    id: 2,
+    titulo: 'Sistema Hospitalario',
+    organizacion: 'Hospital General',
+    descripcion: 'Sistema de inventario médico',
+    modalidad: 'Presencial',
+    horas: 200,
+    tecnologias: ['Java', 'Spring', 'PostgreSQL'],
+    status: 'Disponible',
+    requisitos: ['Carta presentación de la Facultad', 'Identificación vigente', 'Compromiso de confidencialidad', 'Disponibilidad 20 hrs/sem'],
+    actividades: ['Captura y control de stock', 'Reportes y consultas', 'Pruebas y soporte a usuarios', 'Capacitación al personal'],
+    horarioDetallado: 'Lunes a Viernes, 8:00–12:00 en sitio'
+  }
 ];
+
 const eventos = [
   { id: 1, titulo: 'Hackathon FI 2025', fecha: '2025-09-15', hora: '9:00 AM', lugar: 'Aula Magna', descripcion: '48 horas de programación intensiva' },
   { id: 2, titulo: 'Conferencia IA', fecha: '2025-09-20', hora: '4:00 PM', lugar: 'Aula Magna', descripcion: 'Experto de Google hablará sobre IA' }
 ];
 
-// --- Componente de Alerta Personalizada (CORREGIDO) ---
+// --- Componente de Alerta Personalizada ---
 const CustomAlert = ({ visible, title, message, onClose }) => (
-    <Modal visible={visible} transparent animationType="fade">
-      <View style={styles.alertBackdrop}>
-        <View style={styles.alertCard}>
-          <Text style={styles.alertTitle}>⚠️ {title}</Text>
-          <Text style={styles.alertMessage}>{message}</Text>
-          <TouchableOpacity style={styles.alertButton} onPress={onClose}>
-            <Text style={styles.alertButtonText}>Entendido</Text>
-          </TouchableOpacity>
-        </View>
+  <Modal visible={visible} transparent animationType="fade">
+    <View style={styles.alertBackdrop}>
+      <View style={styles.alertCard}>
+        <Text style={styles.alertTitle}>⚠️ {title}</Text>
+        <Text style={styles.alertMessage}>{message}</Text>
+        <TouchableOpacity style={styles.alertButton} onPress={onClose}>
+          <Text style={styles.alertButtonText}>Entendido</Text>
+        </TouchableOpacity>
       </View>
-    </Modal>
+    </View>
+  </Modal>
 );
 
-// --- Componente de Pantalla de Carga ---
+// --- Pantalla de Carga (splash) ---
 const LoadingScreen = () => {
-    const opacity = useState(new Animated.Value(0))[0];
+  const opacity = useState(new Animated.Value(0))[0];
 
-    useEffect(() => {
-        Animated.loop(
-            Animated.sequence([
-                Animated.timing(opacity, { toValue: 1, duration: 1000, useNativeDriver: true }),
-                Animated.timing(opacity, { toValue: 0.7, duration: 1000, useNativeDriver: true }),
-            ])
-        ).start();
-    }, [opacity]);
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, { toValue: 1, duration: 1000, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.7, duration: 1000, useNativeDriver: true }),
+      ])
+    ).start();
+  }, [opacity]);
 
-    return (
-        <View style={styles.loadingContainer}>
-            <StatusBar barStyle="light-content" backgroundColor={theme.colors.background} />
-            <Animated.Image
-                source={require('./assets/logo.png')}
-                style={[styles.loadingLogoImage, { opacity }]}
-            />
-        </View>
-    );
+  return (
+    <View style={styles.loadingContainer}>
+      <StatusBar barStyle="light-content" backgroundColor={theme.colors.background} />
+      <Animated.Image
+        source={require('./assets/logo.png')}
+        style={[styles.loadingLogoImage, { opacity }]}
+      />
+    </View>
+  );
 };
-
 
 const VidaUAQApp = () => {
   // App Loading
@@ -99,14 +126,14 @@ const VidaUAQApp = () => {
 
   // Auth
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [authMode, setAuthMode] = useState('login');
+  const [authMode, setAuthMode] = useState('login'); // 'login' | 'signup'
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
   const [authName, setAuthName] = useState('');
   const [authPassword2, setAuthPassword2] = useState('');
-  const [signupSuccess, setSignupSuccess] = useState(false);
+  const [signupSuccess, setSignupSuccess] = useState(false); // modal éxito
 
-  // Custom Alert State
+  // Custom Alert
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertInfo, setAlertInfo] = useState({ title: '', message: '' });
 
@@ -116,11 +143,15 @@ const VidaUAQApp = () => {
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [favorites, setFavorites] = useState([2]);
 
-  // Simula la carga inicial de la app
+  // Servicio Social: postulaciones y modales
+  const [applyModalProject, setApplyModalProject] = useState(null); // proyecto seleccionado para ver requisitos
+  const [appliedIds, setAppliedIds] = useState(new Set());          // ids ya postulados
+  const [appliedSuccessVisible, setAppliedSuccessVisible] = useState(false);
+
+  // Simula carga inicial
   useEffect(() => {
-    setTimeout(() => {
-        setIsLoading(false);
-    }, 2000); // Muestra el logo por 2 segundos
+    const t = setTimeout(() => setIsLoading(false), 2000);
+    return () => clearTimeout(t);
   }, []);
 
   const showAlert = (title, message) => {
@@ -138,6 +169,7 @@ const VidaUAQApp = () => {
     ));
   };
 
+  // Demo de login/registro
   const handleAuthSubmit = () => {
     if (!authEmail || !authPassword || (authMode === 'signup' && (!authName || !authPassword2))) {
       showAlert('Campos incompletos', 'Por favor, rellena todos los campos para continuar.');
@@ -156,6 +188,7 @@ const VidaUAQApp = () => {
       return;
     }
 
+    // Login
     setIsAuthenticated(true);
     setActiveTab('campus');
   };
@@ -171,6 +204,8 @@ const VidaUAQApp = () => {
     setSelectedLocation(null);
     setFavorites([2]);
   };
+
+  const isApplied = (id) => appliedIds.has(id);
 
   // --- Pantalla de Login/Crear cuenta ---
   const LoginScreen = () => (
@@ -258,6 +293,7 @@ const VidaUAQApp = () => {
         </ScrollView>
       </KeyboardAvoidingView>
 
+      {/* Modal de éxito de registro */}
       <Modal visible={signupSuccess} transparent animationType="fade">
         <View style={styles.successBackdrop}>
           <View style={styles.successCard}>
@@ -277,14 +313,14 @@ const VidaUAQApp = () => {
           </View>
         </View>
       </Modal>
-      
-      <CustomAlert 
+
+      {/* Alerta personalizada */}
+      <CustomAlert
         visible={alertVisible}
         title={alertInfo.title}
         message={alertInfo.message}
         onClose={() => setAlertVisible(false)}
       />
-
     </SafeAreaView>
   );
 
@@ -299,6 +335,7 @@ const VidaUAQApp = () => {
         <Text style={styles.headerName}>🏛 Explora tu Campus</Text>
         <Text style={styles.headerSubtitle}>Facultad de Informática - Juriquilla</Text>
       </View>
+
       <View style={styles.searchContainer}>
         <Text style={{ fontSize: 20, marginRight: theme.spacing.sm }}>🔍</Text>
         <TextInput
@@ -311,6 +348,7 @@ const VidaUAQApp = () => {
           autoCapitalize="none"
         />
       </View>
+
       {campusLocations
         .filter(loc => loc.nombre.toLowerCase().includes(searchText.toLowerCase()))
         .map(location => (
@@ -324,7 +362,9 @@ const VidaUAQApp = () => {
                 <Text style={{ fontSize: 28 }}>{favorites.includes(location.id) ? '❤' : '🤍'}</Text>
               </TouchableOpacity>
             </View>
+
             <Text style={styles.description}>{location.descripcion}</Text>
+
             <View style={styles.metaRow}>
               <View style={styles.ratingContainer}>
                 {renderStars(location.rating)}
@@ -332,6 +372,7 @@ const VidaUAQApp = () => {
               </View>
               <Text style={styles.scheduleText}>🕒 {location.horario}</Text>
             </View>
+
             <View style={styles.tagContainer}>
               {location.servicios.map(servicio => (
                 <View key={servicio} style={styles.tag}>
@@ -349,45 +390,58 @@ const VidaUAQApp = () => {
       <View style={styles.header}>
         <Text style={styles.headerName}>🎓 Servicio Social</Text>
       </View>
+
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Progreso de Horas</Text>
         <View style={styles.progressBar}>
           <View
-           style={[
-             styles.progressFill,
-             { width: `${(userProfile.horasServicio / userProfile.horasRequeridas) * 100}%` }
-           ]}
+            style={[
+              styles.progressFill,
+              { width: `${(userProfile.horasServicio / userProfile.horasRequeridas) * 100}%` }
+            ]}
           />
         </View>
         <Text style={styles.progressLabel}>
           {userProfile.horasServicio} de {userProfile.horasRequeridas} horas completadas
         </Text>
       </View>
-      {proyectosServicio.map(proyecto => (
-        <View key={proyecto.id} style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>{proyecto.titulo}</Text>
-            <View style={styles.statusBadge}>
-              <Text style={styles.statusBadgeText}>{proyecto.status}</Text>
-            </View>
-          </View>
-          <Text style={styles.description}>🏢 {proyecto.organizacion}</Text>
-          <View style={styles.metaRow}>
-            <Text style={styles.scheduleText}>{proyecto.modalidad}</Text>
-            <Text style={styles.scheduleText}>{proyecto.horas} horas</Text>
-          </View>
-          <View style={styles.tagContainer}>
-            {proyecto.tecnologias.map(tech => (
-              <View key={tech} style={styles.tag}>
-                <Text style={styles.tagText}>{tech}</Text>
+
+      {proyectosServicio.map(proyecto => {
+        const applied = isApplied(proyecto.id);
+        return (
+          <View key={proyecto.id} style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>{proyecto.titulo}</Text>
+              <View style={[styles.statusBadge, { backgroundColor: theme.colors.success }]}>
+                <Text style={styles.statusBadgeText}>{proyecto.status}</Text>
               </View>
-            ))}
+            </View>
+
+            <Text style={styles.description}>🏢 {proyecto.organizacion}</Text>
+
+            <View style={styles.metaRow}>
+              <Text style={styles.scheduleText}>{proyecto.modalidad}</Text>
+              <Text style={styles.scheduleText}>{proyecto.horas} horas</Text>
+            </View>
+
+            <View style={styles.tagContainer}>
+              {proyecto.tecnologias.map(tech => (
+                <View key={tech} style={styles.tag}>
+                  <Text style={styles.tagText}>{tech}</Text>
+                </View>
+              ))}
+            </View>
+
+            <TouchableOpacity
+              disabled={applied}
+              style={[styles.applyButton, applied && { backgroundColor: theme.colors.muted }]}
+              onPress={() => setApplyModalProject(proyecto)}
+            >
+              <Text style={styles.applyButtonText}>{applied ? 'Postulado' : 'Postularse'}</Text>
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity style={styles.applyButton}>
-            <Text style={styles.applyButtonText}>Postularse</Text>
-          </TouchableOpacity>
-        </View>
-      ))}
+        );
+      })}
     </ScrollView>
   );
 
@@ -396,6 +450,7 @@ const VidaUAQApp = () => {
       <View style={styles.header}>
         <Text style={styles.headerName}>📅 Eventos del Campus</Text>
       </View>
+
       {eventos.map(evento => {
         const date = new Date(evento.fecha + 'T00:00:00');
         const day = date.getDate();
@@ -430,6 +485,7 @@ const VidaUAQApp = () => {
         <Text style={styles.profileName}>{userProfile.nombre}</Text>
         <Text style={styles.profileCareer}>{userProfile.carrera}</Text>
         <Text style={styles.profileSemester}>{userProfile.semestre} semestre</Text>
+
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{userProfile.horasServicio}</Text>
@@ -444,6 +500,7 @@ const VidaUAQApp = () => {
             <Text style={styles.statLabel}>Favoritos</Text>
           </View>
         </View>
+
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Text style={styles.logoutButtonText}>Cerrar sesión</Text>
         </TouchableOpacity>
@@ -472,7 +529,7 @@ const VidaUAQApp = () => {
       </View>
     );
   };
-  
+
   // App autenticada
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
@@ -483,6 +540,7 @@ const VidaUAQApp = () => {
       {activeTab === 'perfil' && <PerfilTab />}
       <TabBar />
 
+      {/* Modal de lugar (campus) */}
       <Modal visible={!!selectedLocation} animationType="slide" transparent>
         {selectedLocation && (
           <View style={styles.modalBackdrop}>
@@ -498,6 +556,69 @@ const VidaUAQApp = () => {
           </View>
         )}
       </Modal>
+
+      {/* Modal de requisitos/actividades/horario para postularse */}
+      <Modal transparent visible={!!applyModalProject} animationType="fade">
+        <View style={styles.successBackdrop}>
+          {applyModalProject && (
+            <View style={[styles.successCard, { alignItems: 'flex-start' }]}>
+              <Text style={[styles.successTitle, { alignSelf: 'center' }]}>📋 Detalles de la Postulación</Text>
+              <Text style={[styles.modalProjectTitle]}>{applyModalProject.titulo}</Text>
+              <Text style={[styles.description]}>🏢 {applyModalProject.organizacion}</Text>
+
+              <Text style={styles.modalSectionTitle}>Requisitos</Text>
+              {applyModalProject.requisitos.map((req, idx) => (
+                <Text key={`r-${idx}`} style={styles.modalListItem}>• {req}</Text>
+              ))}
+
+              <Text style={[styles.modalSectionTitle, { marginTop: theme.spacing.md }]}>Actividades</Text>
+              {applyModalProject.actividades.map((act, idx) => (
+                <Text key={`a-${idx}`} style={styles.modalListItem}>• {act}</Text>
+              ))}
+
+              <Text style={[styles.modalSectionTitle, { marginTop: theme.spacing.md }]}>Horario</Text>
+              <Text style={styles.modalListItem}>🕒 {applyModalProject.horarioDetallado}</Text>
+
+              <View style={{ flexDirection: 'row', gap: 12, width: '100%', marginTop: theme.spacing.lg }}>
+                <TouchableOpacity
+                  style={[styles.dialogBtn, { backgroundColor: theme.colors.muted }]}
+                  onPress={() => setApplyModalProject(null)}
+                >
+                  <Text style={styles.dialogBtnText}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.dialogBtn, { backgroundColor: theme.colors.primary, flex: 1 }]}
+                  onPress={() => {
+                    setApplyModalProject(null);
+                    setAppliedIds(prev => new Set([...Array.from(prev), applyModalProject.id]));
+                    setAppliedSuccessVisible(true);
+                  }}
+                >
+                  <Text style={styles.dialogBtnText}>Aceptar</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+        </View>
+      </Modal>
+
+      {/* Modal de confirmación de postulación */}
+      <Modal transparent visible={appliedSuccessVisible} animationType="fade">
+        <View style={styles.successBackdrop}>
+          <View style={styles.successCard}>
+            <Text style={styles.successTitle}>🎉 ¡Te has postulado!</Text>
+            <Text style={styles.successMsg}>
+              Te has postulado, espera que te contactemos para ver si te aceptan.
+            </Text>
+            <TouchableOpacity
+              style={styles.successBtn}
+              onPress={() => setAppliedSuccessVisible(false)}
+            >
+              <Text style={styles.successBtnText}>Entendido</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -506,12 +627,8 @@ const VidaUAQApp = () => {
 const styles = StyleSheet.create({
   // LOADING
   loadingContainer: { flex: 1, backgroundColor: theme.colors.background, justifyContent: 'center', alignItems: 'center' },
-  loadingLogoImage: {
-    width: 250,
-    height: 250,
-    resizeMode: 'contain',
-  },
-  
+  loadingLogoImage: { width: 250, height: 250, resizeMode: 'contain' },
+
   // LOGIN
   loginContainer: { flex: 1, backgroundColor: theme.colors.background },
   loginLogo: { ...theme.typography.h1, fontSize: 48, color: theme.colors.primary, textAlign: 'center', fontWeight: '900' },
@@ -521,25 +638,25 @@ const styles = StyleSheet.create({
   inputLabel: { ...theme.typography.caption, color: theme.colors.subtext, marginBottom: theme.spacing.sm },
   textInput: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.md, padding: theme.spacing.md, ...theme.typography.body, color: theme.colors.text },
   loginButton: { backgroundColor: theme.colors.primary, borderRadius: theme.borderRadius.md, padding: theme.spacing.md, alignItems: 'center', marginTop: theme.spacing.md },
-  loginButtonText: { color: theme.colors.background, fontWeight: 'bold', fontSize: 16 },
+  loginButtonText: { color: theme.colors.white, fontWeight: 'bold', fontSize: 16 },
   switchAuthContainer: { alignItems: 'center', marginTop: theme.spacing.md },
   switchAuthText: { ...theme.typography.body, color: theme.colors.accent },
 
   // Éxito de registro
-  successBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
-  successCard: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.lg, padding: theme.spacing.lg, marginHorizontal: theme.spacing.lg, alignItems: 'center', width: '85%' },
+  successBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: theme.spacing.lg },
+  successCard: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.lg, padding: theme.spacing.lg, alignItems: 'center', width: '100%' },
   successTitle: { ...theme.typography.h2, marginBottom: theme.spacing.sm, textAlign: 'center' },
   successMsg: { ...theme.typography.body, color: theme.colors.subtext, textAlign: 'center' },
   successBtn: { backgroundColor: theme.colors.primary, padding: theme.spacing.md, borderRadius: theme.borderRadius.md, marginTop: theme.spacing.lg, width: '100%', alignItems: 'center' },
-  successBtnText: { color: theme.colors.background, fontWeight: 'bold' },
-  
+  successBtnText: { color: theme.colors.white, fontWeight: 'bold' },
+
   // Custom Alert
   alertBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' },
   alertCard: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.lg, padding: theme.spacing.lg, marginHorizontal: theme.spacing.lg, width: '85%', ...theme.shadow },
   alertTitle: { ...theme.typography.h3, color: theme.colors.text, marginBottom: theme.spacing.sm },
   alertMessage: { ...theme.typography.body, color: theme.colors.subtext, lineHeight: 22 },
   alertButton: { backgroundColor: theme.colors.primary, borderRadius: theme.borderRadius.md, padding: theme.spacing.md, alignItems: 'center', marginTop: theme.spacing.lg },
-  alertButtonText: { color: theme.colors.background, fontWeight: 'bold', fontSize: 16 },
+  alertButtonText: { color: theme.colors.white, fontWeight: 'bold', fontSize: 16 },
 
   // APP
   container: { flex: 1, backgroundColor: theme.colors.background },
@@ -567,11 +684,11 @@ const styles = StyleSheet.create({
   progressFill: { height: '100%', backgroundColor: theme.colors.primary, borderRadius: 4 },
   progressLabel: { ...theme.typography.caption, alignSelf: 'flex-end', marginTop: theme.spacing.sm },
 
-  statusBadge: { backgroundColor: theme.colors.success, borderRadius: 50, paddingHorizontal: theme.spacing.sm, paddingVertical: 4 },
+  statusBadge: { borderRadius: 50, paddingHorizontal: theme.spacing.sm, paddingVertical: 4 },
   statusBadgeText: { color: theme.colors.white, ...theme.typography.caption, fontWeight: 'bold' },
 
   applyButton: { backgroundColor: theme.colors.primary, borderRadius: theme.borderRadius.md, padding: theme.spacing.md, alignItems: 'center', marginTop: theme.spacing.md },
-  applyButtonText: { color: theme.colors.background, fontWeight: 'bold' },
+  applyButtonText: { color: theme.colors.white, fontWeight: 'bold' },
 
   eventDate: { alignItems: 'center', marginRight: theme.spacing.md, backgroundColor: theme.colors.highlight, padding: theme.spacing.sm, borderRadius: theme.borderRadius.md },
   eventDay: { ...theme.typography.h1, color: theme.colors.primary },
@@ -579,7 +696,7 @@ const styles = StyleSheet.create({
 
   profileCard: { backgroundColor: theme.colors.surface, marginHorizontal: theme.spacing.md, borderRadius: theme.borderRadius.lg, padding: theme.spacing.lg, alignItems: 'center', ...theme.shadow },
   avatar: { width: 100, height: 100, borderRadius: 50, backgroundColor: theme.colors.primary, justifyContent: 'center', alignItems: 'center', marginBottom: theme.spacing.md },
-  avatarText: { ...theme.typography.h1, color: theme.colors.background },
+  avatarText: { ...theme.typography.h1, color: theme.colors.white },
   profileName: { ...theme.typography.h2 },
   profileCareer: { ...theme.typography.body, color: theme.colors.primary, marginVertical: theme.spacing.sm / 2 },
   profileSemester: { ...theme.typography.caption },
@@ -603,7 +720,14 @@ const styles = StyleSheet.create({
   modalBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' },
   modalContent: { backgroundColor: theme.colors.surface, borderTopLeftRadius: theme.borderRadius.lg, borderTopRightRadius: theme.borderRadius.lg, padding: theme.spacing.lg },
   modalTitle: { ...theme.typography.h2, marginBottom: theme.spacing.sm },
-  closeButton: { position: 'absolute', top: theme.spacing.md, right: theme.spacing.md, backgroundColor: theme.colors.background, width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' }
+  closeButton: { position: 'absolute', top: theme.spacing.md, right: theme.spacing.md, backgroundColor: theme.colors.background, width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
+
+  // Modal de proyecto (Postularse)
+  modalProjectTitle: { ...theme.typography.h3, marginTop: theme.spacing.sm, marginBottom: theme.spacing.sm, alignSelf: 'flex-start' },
+  modalSectionTitle: { ...theme.typography.h3, marginTop: theme.spacing.sm },
+  modalListItem: { ...theme.typography.body, color: theme.colors.subtext, marginTop: 4 },
+  dialogBtn: { padding: theme.spacing.md, borderRadius: theme.borderRadius.md, flex: 1, alignItems: 'center' },
+  dialogBtnText: { color: theme.colors.white, fontWeight: '700' },
 });
 
 export default VidaUAQApp;

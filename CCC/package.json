@@ -1,6 +1,6 @@
 {
   "name": "ccc",
-  "version": "1.0.0",
+ "version": "1.0.0",
   "main": "index.js",
   "scripts": {
     "start": "expo start",
@@ -9,13 +9,11 @@
     "web": "expo start --web"
   },
   "dependencies": {
-    "expo": "~53.0.22",
-    "expo-status-bar": "~2.2.3",
-    "react": "19.0.0",
-    "react-native": "0.79.6"
-  },
-  "devDependencies": {
-    "@babel/core": "^7.20.0"
+    "@react-native-async-storage/async-storage": "^2.2.0",
+    "expo": "~54.0.13",
+    "expo-status-bar": "~3.0.8",
+    "react": "19.1.0",
+    "react-native": "0.81.4"
   },
   "private": true
 }
