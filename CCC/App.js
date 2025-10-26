@@ -3,8 +3,7 @@ import {
   View, Text, TouchableOpacity, ScrollView, TextInput, Modal,
   StyleSheet, SafeAreaView, StatusBar, KeyboardAvoidingView, Platform, Animated
 } from 'react-native';
-
-// --- Sistema de Diseño (Theme) ---
+0
 const theme = {
   colors: {
     background: '#0F172A',
