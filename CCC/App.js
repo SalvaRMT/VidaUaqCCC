@@ -59,8 +59,8 @@ const campusLocations = [
     rating: 4.8,
     servicios: ['WiFi', 'Computadoras', 'Área silenciosa'],
     icon: '📚',
-    direccion: 'Centro de Desarrollo FIF, Blvd. Jurica la Campana 898, 76230 Juriquilla, Qro.',
-    mapsQuery: 'Centro de Desarrollo FIF, Blvd. Jurica la Campana 898, 76230 Juriquilla, Qro.'
+    direccion: 'Biblioteca UAQ Campus Juriquilla, PH34+6W, Av. de las Ciencias S/N, 76230 Juriquilla, Qro.',
+    mapsQuery: 'Biblioteca UAQ Campus Juriquilla, PH34+6W, Av. de las Ciencias S/N, 76230 Juriquilla, Qro.'
   },
   {
     id: 2,
