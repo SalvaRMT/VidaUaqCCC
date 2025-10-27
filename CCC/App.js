@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, TouchableOpacity, ScrollView, TextInput, Modal,
+  View, Text, TouchableOpacity, TouchableWithoutFeedback,
+  ScrollView, TextInput, Modal,
   StyleSheet, SafeAreaView, StatusBar, KeyboardAvoidingView, Platform, Animated
 } from 'react-native';
-0
+import { Linking } from 'react-native';
+
 const theme = {
   colors: {
     background: '#0F172A',
@@ -38,14 +40,55 @@ const theme = {
 };
 
 // --- Datos demo ---
-const userProfile = { nombre: 'Son Goku', carrera: 'Ingeniería en Software', semestre: '6to', horasServicio: 120, horasRequeridas: 480 };
+const userProfile = {
+  nombre: 'Son Goku',
+  carrera: 'Ingeniería en Software',
+  semestre: '6to',
+  horasServicio: 120,
+  horasRequeridas: 480
+};
+
+// Lugares del campus con dirección y query de Maps
 const campusLocations = [
-  { id: 1, nombre: 'Biblioteca Central Informática', categoria: 'Estudio', descripcion: 'Biblioteca especializada en tecnología y programación', horario: '7:00 AM - 9:00 PM', rating: 4.8, servicios: ['WiFi', 'Computadoras', 'Área silenciosa'], icon: '📚' },
-  { id: 2, nombre: 'Lab de Redes', categoria: 'Laboratorio', descripcion: 'Laboratorio con equipos Cisco para networking', horario: '8:00 AM - 6:00 PM', rating: 4.5, servicios: ['Equipos Cisco', 'Simuladores'], icon: '🔬' },
-  { id: 3, nombre: 'Cafetería FI "El comal++"', categoria: 'Comida', descripcion: 'Cafetería estudiantil con precios accesibles', horario: '7:30 AM - 4:00 PM', rating: 4.2, servicios: ['WiFi', 'Precios estudiante'], icon: '☕' }
+  {
+    id: 1,
+    nombre: 'Biblioteca Central Informática',
+    categoria: 'Estudio',
+    descripcion: 'Biblioteca especializada en tecnología y programación',
+    horario: '7:00 AM - 9:00 PM',
+    rating: 4.8,
+    servicios: ['WiFi', 'Computadoras', 'Área silenciosa'],
+    icon: '📚',
+    direccion: 'PH34+6W, Av. de las Ciencias S/N, 76230 Juriquilla, Qro.',
+    mapsQuery: 'PH34+6W, Av. de las Ciencias S/N, 76230 Juriquilla, Qro.'
+  },
+  {
+    id: 2,
+    nombre: 'Cafetería FI "El comal++"',
+    categoria: 'Comida',
+    descripcion: 'Cafetería estudiantil con precios accesibles',
+    horario: '7:30 AM - 4:00 PM',
+    rating: 4.2,
+    servicios: ['WiFi', 'Precios estudiante'],
+    icon: '☕',
+    direccion: 'Comal ++, 76230 Juriquilla, Qro.',
+    mapsQuery: 'Comal ++, 76230 Juriquilla, Qro.'
+  },
+  {
+    id: 3,
+    nombre: 'Lab de Redes',
+    categoria: 'Laboratorio',
+    descripcion: 'Laboratorio con equipos Cisco para networking',
+    horario: '8:00 AM - 6:00 PM',
+    rating: 4.5,
+    servicios: ['Equipos Cisco', 'Simuladores'],
+    icon: '🔬',
+    direccion: 'Blvd. Jurica la Campana 898, 76230 Juriquilla, Qro.',
+    mapsQuery: 'Blvd. Jurica la Campana 898, 76230 Juriquilla, Qro.'
+  }
 ];
 
-// 👇 Requisitos/actividades/horarioDetallado
+// Servicio social
 const proyectosServicio = [
   {
     id: 1,
@@ -56,8 +99,18 @@ const proyectosServicio = [
     horas: 150,
     tecnologias: ['React', 'Node.js', 'MongoDB'],
     status: 'Disponible',
-    requisitos: ['Kardex con 70% créditos', 'Constancia de seguro facultativo', 'Carta de motivos', 'Disponibilidad 15 hrs/sem'],
-    actividades: ['Desarrollar landing y dashboard', 'Integración con API REST', 'Soporte y documentación', 'Revisiones semanales con la ONG'],
+    requisitos: [
+      'Kardex con 70% créditos',
+      'Constancia de seguro facultativo',
+      'Carta de motivos',
+      'Disponibilidad 15 hrs/sem'
+    ],
+    actividades: [
+      'Desarrollar landing y dashboard',
+      'Integración con API REST',
+      'Soporte y documentación',
+      'Revisiones semanales con la ONG'
+    ],
     horarioDetallado: 'Lunes a Viernes, 9:00–13:00 (flexible remoto/presencial)'
   },
   {
@@ -69,15 +122,39 @@ const proyectosServicio = [
     horas: 200,
     tecnologias: ['Java', 'Spring', 'PostgreSQL'],
     status: 'Disponible',
-    requisitos: ['Carta presentación de la Facultad', 'Identificación vigente', 'Compromiso de confidencialidad', 'Disponibilidad 20 hrs/sem'],
-    actividades: ['Captura y control de stock', 'Reportes y consultas', 'Pruebas y soporte a usuarios', 'Capacitación al personal'],
+    requisitos: [
+      'Carta presentación de la Facultad',
+      'Identificación vigente',
+      'Compromiso de confidencialidad',
+      'Disponibilidad 20 hrs/sem'
+    ],
+    actividades: [
+      'Captura y control de stock',
+      'Reportes y consultas',
+      'Pruebas y soporte a usuarios',
+      'Capacitación al personal'
+    ],
     horarioDetallado: 'Lunes a Viernes, 8:00–12:00 en sitio'
   }
 ];
 
 const eventos = [
-  { id: 1, titulo: 'Hackathon FI 2025', fecha: '2025-09-15', hora: '9:00 AM', lugar: 'Aula Magna', descripcion: '48 horas de programación intensiva' },
-  { id: 2, titulo: 'Conferencia IA', fecha: '2025-09-20', hora: '4:00 PM', lugar: 'Aula Magna', descripcion: 'Experto de Google hablará sobre IA' }
+  {
+    id: 1,
+    titulo: 'Hackathon FI 2025',
+    fecha: '2025-09-15',
+    hora: '9:00 AM',
+    lugar: 'Aula Magna',
+    descripcion: '48 horas de programación intensiva'
+  },
+  {
+    id: 2,
+    titulo: 'Conferencia IA',
+    fecha: '2025-09-20',
+    hora: '4:00 PM',
+    lugar: 'Aula Magna',
+    descripcion: 'Experto de Google hablará sobre IA'
+  }
 ];
 
 // --- Componente de Alerta Personalizada ---
@@ -164,7 +241,15 @@ const VidaUAQApp = () => {
 
   const renderStars = (rating) => {
     return Array.from({ length: 5 }, (_, i) => (
-      <Text key={i} style={{ color: i < Math.round(rating) ? theme.colors.star : '#475569', fontSize: 16 }}>★</Text>
+      <Text
+        key={i}
+        style={{
+          color: i < Math.round(rating) ? theme.colors.star : '#475569',
+          fontSize: 16
+        }}
+      >
+        ★
+      </Text>
     ));
   };
 
@@ -206,11 +291,21 @@ const VidaUAQApp = () => {
 
   const isApplied = (id) => appliedIds.has(id);
 
+  // abrir Google Maps con la dirección del lugar
+  const openInMaps = (query) => {
+    const encoded = encodeURIComponent(query);
+    const url = `https://www.google.com/maps/search/?api=1&query=${encoded}`;
+    Linking.openURL(url);
+  };
+
   // --- Pantalla de Login/Crear cuenta ---
   const LoginScreen = () => (
     <SafeAreaView style={styles.loginContainer}>
       <StatusBar barStyle="light-content" backgroundColor={theme.colors.background} />
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, justifyContent: 'center' }}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1, justifyContent: 'center' }}
+      >
         <ScrollView
           contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingBottom: theme.spacing.lg }}
           keyboardShouldPersistTaps="always"
@@ -277,7 +372,9 @@ const VidaUAQApp = () => {
             )}
 
             <TouchableOpacity style={styles.loginButton} onPress={handleAuthSubmit}>
-              <Text style={styles.loginButtonText}>{authMode === 'login' ? 'Ingresar' : 'Crear cuenta'}</Text>
+              <Text style={styles.loginButtonText}>
+                {authMode === 'login' ? 'Ingresar' : 'Crear cuenta'}
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -285,7 +382,9 @@ const VidaUAQApp = () => {
               onPress={() => setAuthMode(prev => (prev === 'login' ? 'signup' : 'login'))}
             >
               <Text style={styles.switchAuthText}>
-                {authMode === 'login' ? '¿No tienes cuenta? Crear cuenta' : '¿Ya tienes cuenta? Inicia sesión'}
+                {authMode === 'login'
+                  ? '¿No tienes cuenta? Crear cuenta'
+                  : '¿Ya tienes cuenta? Inicia sesión'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -323,13 +422,13 @@ const VidaUAQApp = () => {
     </SafeAreaView>
   );
 
-  // --- RENDERIZADO PRINCIPAL ---
-  if (isLoading) return <LoadingScreen />;
-  if (!isAuthenticated) return <LoginScreen />;
-
   // --- Tabs ---
   const CampusTab = () => (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+    <ScrollView
+      style={styles.container}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+    >
       <View style={styles.header}>
         <Text style={styles.headerName}>🏛 Explora tu Campus</Text>
         <Text style={styles.headerSubtitle}>Facultad de Informática - Juriquilla</Text>
@@ -351,14 +450,22 @@ const VidaUAQApp = () => {
       {campusLocations
         .filter(loc => loc.nombre.toLowerCase().includes(searchText.toLowerCase()))
         .map(location => (
-          <TouchableOpacity key={location.id} style={styles.card} onPress={() => setSelectedLocation(location)}>
+          <TouchableOpacity
+            key={location.id}
+            style={styles.card}
+            onPress={() => setSelectedLocation(location)}
+          >
             <View style={styles.cardHeader}>
               <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                <Text style={{ fontSize: 24, marginRight: theme.spacing.sm }}>{location.icon}</Text>
+                <Text style={{ fontSize: 24, marginRight: theme.spacing.sm }}>
+                  {location.icon}
+                </Text>
                 <Text style={styles.cardTitle}>{location.nombre}</Text>
               </View>
               <TouchableOpacity onPress={() => toggleFavorite(location.id)}>
-                <Text style={{ fontSize: 28 }}>{favorites.includes(location.id) ? '❤' : '🤍'}</Text>
+                <Text style={{ fontSize: 28 }}>
+                  {favorites.includes(location.id) ? '❤' : '🤍'}
+                </Text>
               </TouchableOpacity>
             </View>
 
@@ -396,7 +503,9 @@ const VidaUAQApp = () => {
           <View
             style={[
               styles.progressFill,
-              { width: `${(userProfile.horasServicio / userProfile.horasRequeridas) * 100}%` }
+              {
+                width: `${(userProfile.horasServicio / userProfile.horasRequeridas) * 100}%`
+              }
             ]}
           />
         </View>
@@ -411,7 +520,9 @@ const VidaUAQApp = () => {
           <View key={proyecto.id} style={styles.card}>
             <View style={styles.cardHeader}>
               <Text style={styles.cardTitle}>{proyecto.titulo}</Text>
-              <View style={[styles.statusBadge, { backgroundColor: theme.colors.success }]}>
+              <View
+                style={[styles.statusBadge, { backgroundColor: theme.colors.success }]}
+              >
                 <Text style={styles.statusBadgeText}>{proyecto.status}</Text>
               </View>
             </View>
@@ -433,10 +544,15 @@ const VidaUAQApp = () => {
 
             <TouchableOpacity
               disabled={applied}
-              style={[styles.applyButton, applied && { backgroundColor: theme.colors.muted }]}
+              style={[
+                styles.applyButton,
+                applied && { backgroundColor: theme.colors.muted }
+              ]}
               onPress={() => setApplyModalProject(proyecto)}
             >
-              <Text style={styles.applyButtonText}>{applied ? 'Postulado' : 'Postularse'}</Text>
+              <Text style={styles.applyButtonText}>
+                {applied ? 'Postulado' : 'Postularse'}
+              </Text>
             </TouchableOpacity>
           </View>
         );
@@ -453,7 +569,9 @@ const VidaUAQApp = () => {
       {eventos.map(evento => {
         const date = new Date(evento.fecha + 'T00:00:00');
         const day = date.getDate();
-        const month = date.toLocaleString('es-MX', { month: 'short' }).replace('.', '');
+        const month = date
+          .toLocaleString('es-MX', { month: 'short' })
+          .replace('.', '');
         return (
           <View key={evento.id} style={styles.card}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -463,7 +581,9 @@ const VidaUAQApp = () => {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.cardTitle}>{evento.titulo}</Text>
-                <Text style={styles.description}>{evento.lugar} - {evento.hora}</Text>
+                <Text style={styles.description}>
+                  {evento.lugar} - {evento.hora}
+                </Text>
               </View>
             </View>
           </View>
@@ -479,7 +599,12 @@ const VidaUAQApp = () => {
       </View>
       <View style={styles.profileCard}>
         <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{userProfile.nombre.split(' ').map(n => n[0]).join('')}</Text>
+          <Text style={styles.avatarText}>
+            {userProfile.nombre
+              .split(' ')
+              .map(n => n[0])
+              .join('')}
+          </Text>
         </View>
         <Text style={styles.profileName}>{userProfile.nombre}</Text>
         <Text style={styles.profileCareer}>{userProfile.carrera}</Text>
@@ -491,7 +616,9 @@ const VidaUAQApp = () => {
             <Text style={styles.statLabel}>Completadas</Text>
           </View>
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>{userProfile.horasRequeridas - userProfile.horasServicio}</Text>
+            <Text style={styles.statValue}>
+              {userProfile.horasRequeridas - userProfile.horasServicio}
+            </Text>
             <Text style={styles.statLabel}>Restantes</Text>
           </View>
           <View style={styles.statItem}>
@@ -518,10 +645,21 @@ const VidaUAQApp = () => {
       <View style={styles.tabBarContainer}>
         <View style={styles.tabBar}>
           {tabs.map(tab => (
-            <TouchableOpacity key={tab.key} style={styles.tabItem} onPress={() => setActiveTab(tab.key)}>
+            <TouchableOpacity
+              key={tab.key}
+              style={styles.tabItem}
+              onPress={() => setActiveTab(tab.key)}
+            >
               {activeTab === tab.key && <View style={styles.activeTabPill} />}
               <Text style={styles.tabIcon}>{tab.icon}</Text>
-              <Text style={[styles.tabLabel, activeTab === tab.key && styles.activeTabLabel]}>{tab.label}</Text>
+              <Text
+                style={[
+                  styles.tabLabel,
+                  activeTab === tab.key && styles.activeTabLabel
+                ]}
+              >
+                {tab.label}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -529,30 +667,69 @@ const VidaUAQApp = () => {
     );
   };
 
-  // App autenticada
+  // --- RENDERIZADO PRINCIPAL ---
+  if (isLoading) return <LoadingScreen />;
+  if (!isAuthenticated) return <LoginScreen />;
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <StatusBar barStyle="light-content" backgroundColor={theme.colors.background} />
+
       {activeTab === 'campus' && <CampusTab />}
       {activeTab === 'servicio' && <ServicioTab />}
       {activeTab === 'eventos' && <EventosTab />}
       {activeTab === 'perfil' && <PerfilTab />}
+
       <TabBar />
 
       {/* Modal de lugar (campus) */}
       <Modal visible={!!selectedLocation} animationType="slide" transparent>
         {selectedLocation && (
-          <View style={styles.modalBackdrop}>
-            <View style={styles.modalContent}>
-              <TouchableOpacity style={styles.closeButton} onPress={() => setSelectedLocation(null)}>
-                <Text style={{ fontWeight: 'bold' }}>✕</Text>
-              </TouchableOpacity>
-              <Text style={styles.modalTitle}>{selectedLocation.nombre}</Text>
-              <Text style={styles.description}>{selectedLocation.descripcion}</Text>
-              <Text style={[styles.scheduleText, { marginVertical: theme.spacing.md }]}>🕒 {selectedLocation.horario}</Text>
-              <TouchableOpacity style={styles.applyButton}><Text style={styles.applyButtonText}>Ver en mapa</Text></TouchableOpacity>
+          <TouchableWithoutFeedback onPress={() => setSelectedLocation(null)}>
+            <View style={styles.modalBackdrop}>
+              <TouchableWithoutFeedback onPress={() => { /* evita cerrar cuando tocas el contenido */ }}>
+                <View style={styles.modalContent}>
+                  <TouchableOpacity
+                    style={styles.closeButton}
+                    onPress={() => setSelectedLocation(null)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.closeButtonText}>✕</Text>
+                  </TouchableOpacity>
+
+                  <Text style={styles.modalTitle}>{selectedLocation.nombre}</Text>
+                  <Text style={styles.description}>{selectedLocation.descripcion}</Text>
+
+                  {selectedLocation.direccion ? (
+                    <Text
+                      style={[
+                        styles.scheduleText,
+                        { marginTop: theme.spacing.sm, marginBottom: theme.spacing.sm }
+                      ]}
+                    >
+                      📍 {selectedLocation.direccion}
+                    </Text>
+                  ) : null}
+
+                  <Text
+                    style={[
+                      styles.scheduleText,
+                      { marginVertical: theme.spacing.md }
+                    ]}
+                  >
+                    🕒 {selectedLocation.horario}
+                  </Text>
+
+                  <TouchableOpacity
+                    style={styles.applyButton}
+                    onPress={() => openInMaps(selectedLocation.mapsQuery)}
+                  >
+                    <Text style={styles.applyButtonText}>Ver en mapa</Text>
+                  </TouchableOpacity>
+                </View>
+              </TouchableWithoutFeedback>
             </View>
-          </View>
+          </TouchableWithoutFeedback>
         )}
       </Modal>
 
@@ -560,36 +737,92 @@ const VidaUAQApp = () => {
       <Modal transparent visible={!!applyModalProject} animationType="fade">
         <View style={styles.successBackdrop}>
           {applyModalProject && (
-            <View style={[styles.successCard, { alignItems: 'flex-start' }]}>
-              <Text style={[styles.successTitle, { alignSelf: 'center' }]}>📋 Detalles de la Postulación</Text>
-              <Text style={[styles.modalProjectTitle]}>{applyModalProject.titulo}</Text>
-              <Text style={[styles.description]}>🏢 {applyModalProject.organizacion}</Text>
+            <View
+              style={[styles.successCard, { alignItems: 'flex-start' }]}
+            >
+              <Text
+                style={[
+                  styles.successTitle,
+                  { alignSelf: 'center' }
+                ]}
+              >
+                📋 Detalles de la Postulación
+              </Text>
+
+              <Text style={[styles.modalProjectTitle]}>
+                {applyModalProject.titulo}
+              </Text>
+              <Text style={[styles.description]}>
+                🏢 {applyModalProject.organizacion}
+              </Text>
 
               <Text style={styles.modalSectionTitle}>Requisitos</Text>
               {applyModalProject.requisitos.map((req, idx) => (
-                <Text key={`r-${idx}`} style={styles.modalListItem}>• {req}</Text>
+                <Text
+                  key={`r-${idx}`}
+                  style={styles.modalListItem}
+                >
+                  • {req}
+                </Text>
               ))}
 
-              <Text style={[styles.modalSectionTitle, { marginTop: theme.spacing.md }]}>Actividades</Text>
+              <Text
+                style={[
+                  styles.modalSectionTitle,
+                  { marginTop: theme.spacing.md }
+                ]}
+              >
+                Actividades
+              </Text>
               {applyModalProject.actividades.map((act, idx) => (
-                <Text key={`a-${idx}`} style={styles.modalListItem}>• {act}</Text>
+                <Text
+                  key={`a-${idx}`}
+                  style={styles.modalListItem}
+                >
+                  • {act}
+                </Text>
               ))}
 
-              <Text style={[styles.modalSectionTitle, { marginTop: theme.spacing.md }]}>Horario</Text>
-              <Text style={styles.modalListItem}>🕒 {applyModalProject.horarioDetallado}</Text>
+              <Text
+                style={[
+                  styles.modalSectionTitle,
+                  { marginTop: theme.spacing.md }
+                ]}
+              >
+                Horario
+              </Text>
+              <Text style={styles.modalListItem}>
+                🕒 {applyModalProject.horarioDetallado}
+              </Text>
 
-              <View style={{ flexDirection: 'row', gap: 12, width: '100%', marginTop: theme.spacing.lg }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  gap: 12,
+                  width: '100%',
+                  marginTop: theme.spacing.lg
+                }}
+              >
                 <TouchableOpacity
-                  style={[styles.dialogBtn, { backgroundColor: theme.colors.muted }]}
+                  style={[
+                    styles.dialogBtn,
+                    { backgroundColor: theme.colors.muted }
+                  ]}
                   onPress={() => setApplyModalProject(null)}
                 >
                   <Text style={styles.dialogBtnText}>Cancelar</Text>
                 </TouchableOpacity>
+
                 <TouchableOpacity
-                  style={[styles.dialogBtn, { backgroundColor: theme.colors.primary, flex: 1 }]}
+                  style={[
+                    styles.dialogBtn,
+                    { backgroundColor: theme.colors.primary, flex: 1 }
+                  ]}
                   onPress={() => {
                     setApplyModalProject(null);
-                    setAppliedIds(prev => new Set([...Array.from(prev), applyModalProject.id]));
+                    setAppliedIds(prev =>
+                      new Set([...Array.from(prev), applyModalProject.id])
+                    );
                     setAppliedSuccessVisible(true);
                   }}
                 >
@@ -625,107 +858,410 @@ const VidaUAQApp = () => {
 // --- Estilos ---
 const styles = StyleSheet.create({
   // LOADING
-  loadingContainer: { flex: 1, backgroundColor: theme.colors.background, justifyContent: 'center', alignItems: 'center' },
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
   loadingLogoImage: { width: 250, height: 250, resizeMode: 'contain' },
 
   // LOGIN
   loginContainer: { flex: 1, backgroundColor: theme.colors.background },
-  loginLogo: { ...theme.typography.h1, fontSize: 48, color: theme.colors.primary, textAlign: 'center', fontWeight: '900' },
-  loginTitle: { ...theme.typography.h2, textAlign: 'center', marginTop: theme.spacing.sm },
-  loginSubtitle: { ...theme.typography.body, color: theme.colors.subtext, textAlign: 'center', marginBottom: theme.spacing.lg * 2 },
+  loginLogo: {
+    ...theme.typography.h1,
+    fontSize: 48,
+    color: theme.colors.primary,
+    textAlign: 'center',
+    fontWeight: '900'
+  },
+  loginTitle: {
+    ...theme.typography.h2,
+    textAlign: 'center',
+    marginTop: theme.spacing.sm
+  },
+  loginSubtitle: {
+    ...theme.typography.body,
+    color: theme.colors.subtext,
+    textAlign: 'center',
+    marginBottom: theme.spacing.lg * 2
+  },
   inputGroup: { marginBottom: theme.spacing.md },
-  inputLabel: { ...theme.typography.caption, color: theme.colors.subtext, marginBottom: theme.spacing.sm },
-  textInput: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.md, padding: theme.spacing.md, ...theme.typography.body, color: theme.colors.text },
-  loginButton: { backgroundColor: theme.colors.primary, borderRadius: theme.borderRadius.md, padding: theme.spacing.md, alignItems: 'center', marginTop: theme.spacing.md },
-  loginButtonText: { color: theme.colors.white, fontWeight: 'bold', fontSize: 16 },
-  switchAuthContainer: { alignItems: 'center', marginTop: theme.spacing.md },
-  switchAuthText: { ...theme.typography.body, color: theme.colors.accent },
+  inputLabel: {
+    ...theme.typography.caption,
+    color: theme.colors.subtext,
+    marginBottom: theme.spacing.sm
+  },
+  textInput: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    ...theme.typography.body,
+    color: theme.colors.text
+  },
+  loginButton: {
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    alignItems: 'center',
+    marginTop: theme.spacing.md
+  },
+  loginButtonText: {
+    color: theme.colors.white,
+    fontWeight: 'bold',
+    fontSize: 16
+  },
+  switchAuthContainer: {
+    alignItems: 'center',
+    marginTop: theme.spacing.md
+  },
+  switchAuthText: {
+    ...theme.typography.body,
+    color: theme.colors.accent
+  },
 
   // Éxito de registro
-  successBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: theme.spacing.lg },
-  successCard: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.lg, padding: theme.spacing.lg, alignItems: 'center', width: '100%' },
-  successTitle: { ...theme.typography.h2, marginBottom: theme.spacing.sm, textAlign: 'center' },
-  successMsg: { ...theme.typography.body, color: theme.colors.subtext, textAlign: 'center' },
-  successBtn: { backgroundColor: theme.colors.primary, padding: theme.spacing.md, borderRadius: theme.borderRadius.md, marginTop: theme.spacing.lg, width: '100%', alignItems: 'center' },
+  successBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: theme.spacing.lg
+  },
+  successCard: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    alignItems: 'center',
+    width: '100%'
+  },
+  successTitle: {
+    ...theme.typography.h2,
+    marginBottom: theme.spacing.sm,
+    textAlign: 'center'
+  },
+  successMsg: {
+    ...theme.typography.body,
+    color: theme.colors.subtext,
+    textAlign: 'center'
+  },
+  successBtn: {
+    backgroundColor: theme.colors.primary,
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+    marginTop: theme.spacing.lg,
+    width: '100%',
+    alignItems: 'center'
+  },
   successBtnText: { color: theme.colors.white, fontWeight: 'bold' },
 
   // Custom Alert
-  alertBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' },
-  alertCard: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.lg, padding: theme.spacing.lg, marginHorizontal: theme.spacing.lg, width: '85%', ...theme.shadow },
-  alertTitle: { ...theme.typography.h3, color: theme.colors.text, marginBottom: theme.spacing.sm },
-  alertMessage: { ...theme.typography.body, color: theme.colors.subtext, lineHeight: 22 },
-  alertButton: { backgroundColor: theme.colors.primary, borderRadius: theme.borderRadius.md, padding: theme.spacing.md, alignItems: 'center', marginTop: theme.spacing.lg },
-  alertButtonText: { color: theme.colors.white, fontWeight: 'bold', fontSize: 16 },
+  alertBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  alertCard: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    marginHorizontal: theme.spacing.lg,
+    width: '85%',
+    ...theme.shadow
+  },
+  alertTitle: {
+    ...theme.typography.h3,
+    color: theme.colors.text,
+    marginBottom: theme.spacing.sm
+  },
+  alertMessage: {
+    ...theme.typography.body,
+    color: theme.colors.subtext,
+    lineHeight: 22
+  },
+  alertButton: {
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    alignItems: 'center',
+    marginTop: theme.spacing.lg
+  },
+  alertButtonText: {
+    color: theme.colors.white,
+    fontWeight: 'bold',
+    fontSize: 16
+  },
 
   // APP
   container: { flex: 1, backgroundColor: theme.colors.background },
   header: { padding: theme.spacing.md },
   headerName: { ...theme.typography.h1 },
-  headerSubtitle: { ...theme.typography.body, color: theme.colors.subtext, marginTop: -4 },
+  headerSubtitle: {
+    ...theme.typography.body,
+    color: theme.colors.subtext,
+    marginTop: -4
+  },
 
-  searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.surface, marginHorizontal: theme.spacing.md, paddingHorizontal: theme.spacing.md, borderRadius: theme.borderRadius.md, marginBottom: theme.spacing.sm, ...theme.shadow },
-  searchInput: { flex: 1, ...theme.typography.body, paddingVertical: theme.spacing.md, color: theme.colors.text },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.surface,
+    marginHorizontal: theme.spacing.md,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+    marginBottom: theme.spacing.sm,
+    ...theme.shadow
+  },
+  searchInput: {
+    flex: 1,
+    ...theme.typography.body,
+    paddingVertical: theme.spacing.md,
+    color: theme.colors.text
+  },
 
-  card: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.lg, padding: theme.spacing.md, marginHorizontal: theme.spacing.md, marginBottom: theme.spacing.md, ...theme.shadow },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing.sm },
+  card: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.md,
+    marginHorizontal: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+    ...theme.shadow
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: theme.spacing.sm
+  },
   cardTitle: { ...theme.typography.h3, flexShrink: 1 },
-  description: { ...theme.typography.body, color: theme.colors.subtext, marginVertical: theme.spacing.sm },
-  metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: theme.spacing.sm },
+  description: {
+    ...theme.typography.body,
+    color: theme.colors.subtext,
+    marginVertical: theme.spacing.sm
+  },
+  metaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: theme.spacing.sm
+  },
   ratingContainer: { flexDirection: 'row', alignItems: 'center' },
-  ratingText: { ...theme.typography.body, color: theme.colors.subtext, marginLeft: theme.spacing.sm },
-  scheduleText: { ...theme.typography.caption, color: theme.colors.subtext },
+  ratingText: {
+    ...theme.typography.body,
+    color: theme.colors.subtext,
+    marginLeft: theme.spacing.sm
+  },
+  scheduleText: {
+    ...theme.typography.caption,
+    color: theme.colors.subtext
+  },
 
-  tagContainer: { flexDirection: 'row', flexWrap: 'wrap', marginTop: theme.spacing.md },
-  tag: { backgroundColor: theme.colors.highlight, borderRadius: 6, paddingHorizontal: theme.spacing.sm, paddingVertical: 4, marginRight: theme.spacing.sm, marginBottom: theme.spacing.sm },
-  tagText: { ...theme.typography.caption, color: theme.colors.primary, fontWeight: '600' },
+  tagContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: theme.spacing.md
+  },
+  tag: {
+    backgroundColor: theme.colors.highlight,
+    borderRadius: 6,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: 4,
+    marginRight: theme.spacing.sm,
+    marginBottom: theme.spacing.sm
+  },
+  tagText: {
+    ...theme.typography.caption,
+    color: theme.colors.primary,
+    fontWeight: '600'
+  },
 
-  progressBar: { height: 8, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 4, marginTop: theme.spacing.md },
-  progressFill: { height: '100%', backgroundColor: theme.colors.primary, borderRadius: 4 },
-  progressLabel: { ...theme.typography.caption, alignSelf: 'flex-end', marginTop: theme.spacing.sm },
+  progressBar: {
+    height: 8,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 4,
+    marginTop: theme.spacing.md
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: theme.colors.primary,
+    borderRadius: 4
+  },
+  progressLabel: {
+    ...theme.typography.caption,
+    alignSelf: 'flex-end',
+    marginTop: theme.spacing.sm
+  },
 
-  statusBadge: { borderRadius: 50, paddingHorizontal: theme.spacing.sm, paddingVertical: 4 },
-  statusBadgeText: { color: theme.colors.white, ...theme.typography.caption, fontWeight: 'bold' },
+  statusBadge: {
+    borderRadius: 50,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: 4
+  },
+  statusBadgeText: {
+    color: theme.colors.white,
+    ...theme.typography.caption,
+    fontWeight: 'bold'
+  },
 
-  applyButton: { backgroundColor: theme.colors.primary, borderRadius: theme.borderRadius.md, padding: theme.spacing.md, alignItems: 'center', marginTop: theme.spacing.md },
+  applyButton: {
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    alignItems: 'center',
+    marginTop: theme.spacing.md
+  },
   applyButtonText: { color: theme.colors.white, fontWeight: 'bold' },
 
-  eventDate: { alignItems: 'center', marginRight: theme.spacing.md, backgroundColor: theme.colors.highlight, padding: theme.spacing.sm, borderRadius: theme.borderRadius.md },
+  eventDate: {
+    alignItems: 'center',
+    marginRight: theme.spacing.md,
+    backgroundColor: theme.colors.highlight,
+    padding: theme.spacing.sm,
+    borderRadius: theme.borderRadius.md
+  },
   eventDay: { ...theme.typography.h1, color: theme.colors.primary },
-  eventMonth: { ...theme.typography.caption, textTransform: 'uppercase', color: theme.colors.primary, fontWeight: '600' },
+  eventMonth: {
+    ...theme.typography.caption,
+    textTransform: 'uppercase',
+    color: theme.colors.primary,
+    fontWeight: '600'
+  },
 
-  profileCard: { backgroundColor: theme.colors.surface, marginHorizontal: theme.spacing.md, borderRadius: theme.borderRadius.lg, padding: theme.spacing.lg, alignItems: 'center', ...theme.shadow },
-  avatar: { width: 100, height: 100, borderRadius: 50, backgroundColor: theme.colors.primary, justifyContent: 'center', alignItems: 'center', marginBottom: theme.spacing.md },
+  profileCard: {
+    backgroundColor: theme.colors.surface,
+    marginHorizontal: theme.spacing.md,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    alignItems: 'center',
+    ...theme.shadow
+  },
+  avatar: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: theme.colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: theme.spacing.md
+  },
   avatarText: { ...theme.typography.h1, color: theme.colors.white },
   profileName: { ...theme.typography.h2 },
-  profileCareer: { ...theme.typography.body, color: theme.colors.primary, marginVertical: theme.spacing.sm / 2 },
+  profileCareer: {
+    ...theme.typography.body,
+    color: theme.colors.primary,
+    marginVertical: theme.spacing.sm / 2
+  },
   profileSemester: { ...theme.typography.caption },
 
-  statsContainer: { flexDirection: 'row', justifyContent: 'space-around', borderTopWidth: 1, borderColor: '#1E293B', marginTop: theme.spacing.md, paddingTop: theme.spacing.md, width: '100%' },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    borderTopWidth: 1,
+    borderColor: '#1E293B',
+    marginTop: theme.spacing.md,
+    paddingTop: theme.spacing.md,
+    width: '100%'
+  },
   statItem: { alignItems: 'center', flex: 1 },
   statValue: { ...theme.typography.h2, color: theme.colors.text },
   statLabel: { ...theme.typography.caption, color: theme.colors.subtext },
 
-  logoutButton: { backgroundColor: theme.colors.danger, borderRadius: theme.borderRadius.md, padding: theme.spacing.md, alignItems: 'center', marginTop: theme.spacing.lg, width: '100%' },
+  logoutButton: {
+    backgroundColor: theme.colors.danger,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+    alignItems: 'center',
+    marginTop: theme.spacing.lg,
+    width: '100%'
+  },
   logoutButtonText: { color: theme.colors.white, fontWeight: 'bold' },
 
-  tabBarContainer: { paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.md, backgroundColor: theme.colors.background },
-  tabBar: { flexDirection: 'row', backgroundColor: theme.colors.surface, borderRadius: 50, padding: theme.spacing.sm, ...theme.shadow },
-  tabItem: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: theme.spacing.sm, position: 'relative' },
+  tabBarContainer: {
+    paddingHorizontal: theme.spacing.lg,
+    paddingBottom: theme.spacing.md,
+    backgroundColor: theme.colors.background
+  },
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: theme.colors.surface,
+    borderRadius: 50,
+    padding: theme.spacing.sm,
+    ...theme.shadow
+  },
+  tabItem: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: theme.spacing.sm,
+    position: 'relative'
+  },
   tabIcon: { fontSize: 24 },
   tabLabel: { ...theme.typography.caption, marginTop: 4 },
   activeTabLabel: { color: theme.colors.primary, fontWeight: '700' },
-  activeTabPill: { position: 'absolute', backgroundColor: theme.colors.highlight, borderRadius: 30, width: '90%', height: '100%', zIndex: -1 },
+  activeTabPill: {
+    position: 'absolute',
+    backgroundColor: theme.colors.highlight,
+    borderRadius: 30,
+    width: '90%',
+    height: '100%',
+    zIndex: -1
+  },
 
-  modalBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' },
-  modalContent: { backgroundColor: theme.colors.surface, borderTopLeftRadius: theme.borderRadius.lg, borderTopRightRadius: theme.borderRadius.lg, padding: theme.spacing.lg },
-  modalTitle: { ...theme.typography.h2, marginBottom: theme.spacing.sm },
-  closeButton: { position: 'absolute', top: theme.spacing.md, right: theme.spacing.md, backgroundColor: theme.colors.background, width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
+  modalBackdrop: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.4)'
+  },
+  modalContent: {
+    backgroundColor: theme.colors.surface,
+    borderTopLeftRadius: theme.borderRadius.lg,
+    borderTopRightRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg
+  },
+  modalTitle: {
+    ...theme.typography.h2,
+    marginBottom: theme.spacing.sm
+  },
+  closeButton: {
+    position: 'absolute',
+    top: theme.spacing.md,
+    right: theme.spacing.md,
+    backgroundColor: theme.colors.background,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  closeButtonText: {
+    fontWeight: 'bold',
+    color: theme.colors.danger,
+    fontSize: 16,
+  },
 
   // Modal de proyecto (Postularse)
-  modalProjectTitle: { ...theme.typography.h3, marginTop: theme.spacing.sm, marginBottom: theme.spacing.sm, alignSelf: 'flex-start' },
-  modalSectionTitle: { ...theme.typography.h3, marginTop: theme.spacing.sm },
-  modalListItem: { ...theme.typography.body, color: theme.colors.subtext, marginTop: 4 },
-  dialogBtn: { padding: theme.spacing.md, borderRadius: theme.borderRadius.md, flex: 1, alignItems: 'center' },
+  modalProjectTitle: {
+    ...theme.typography.h3,
+    marginTop: theme.spacing.sm,
+    marginBottom: theme.spacing.sm,
+    alignSelf: 'flex-start'
+  },
+  modalSectionTitle: {
+    ...theme.typography.h3,
+    marginTop: theme.spacing.sm
+  },
+  modalListItem: {
+    ...theme.typography.body,
+    color: theme.colors.subtext,
+    marginTop: 4
+  },
+  dialogBtn: {
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+    flex: 1,
+    alignItems: 'center'
+  },
   dialogBtnText: { color: theme.colors.white, fontWeight: '700' },
 });
 
