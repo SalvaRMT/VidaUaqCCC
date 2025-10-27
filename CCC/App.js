@@ -59,8 +59,8 @@ const campusLocations = [
     rating: 4.8,
     servicios: ['WiFi', 'Computadoras', 'Área silenciosa'],
     icon: '📚',
-    direccion: 'Biblioteca UAQ Campus Juriquilla, PH34+6W, Av. de las Ciencias S/N, 76230 Juriquilla, Qro.',
-    mapsQuery: 'Biblioteca UAQ Campus Juriquilla, PH34+6W, Av. de las Ciencias S/N, 76230 Juriquilla, Qro.'
+    direccion: 'PH34+6W Biblioteca UAQ Campus Juriquilla, Av. de las Ciencias S/N, 76230 Juriquilla, Qro.',
+    mapsQuery: 'PH34+6W Biblioteca UAQ Campus Juriquilla, Av. de las Ciencias S/N, 76230 Juriquilla, Qro.'
   },
   {
     id: 2,
