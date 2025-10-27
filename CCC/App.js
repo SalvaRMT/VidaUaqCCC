@@ -59,8 +59,8 @@ const campusLocations = [
     rating: 4.8,
     servicios: ['WiFi', 'Computadoras', 'Área silenciosa'],
     icon: '📚',
-    direccion: 'PH34+6W, Av. de las Ciencias S/N, 76230 Juriquilla, Qro.',
-    mapsQuery: 'PH34+6W, Av. de las Ciencias S/N, 76230 Juriquilla, Qro.'
+    direccion: 'Centro de Desarrollo FIF, Blvd. Jurica la Campana 898, 76230 Juriquilla, Qro.',
+    mapsQuery: 'Centro de Desarrollo FIF, Blvd. Jurica la Campana 898, 76230 Juriquilla, Qro.'
   },
   {
     id: 2,
@@ -83,8 +83,8 @@ const campusLocations = [
     rating: 4.5,
     servicios: ['Equipos Cisco', 'Simuladores'],
     icon: '🔬',
-    direccion: 'Blvd. Jurica la Campana 898, 76230 Juriquilla, Qro.',
-    mapsQuery: 'Blvd. Jurica la Campana 898, 76230 Juriquilla, Qro.'
+    direccion: 'Centro de Desarrollo FIF, Blvd. Jurica la Campana 898, 76230 Juriquilla, Qro.',
+    mapsQuery: 'Centro de Desarrollo FIF, Blvd. Jurica la Campana 898, 76230 Juriquilla, Qro.'
   }
 ];
 
