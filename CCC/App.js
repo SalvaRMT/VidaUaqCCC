@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, TouchableWithoutFeedback,
   ScrollView, TextInput, Modal,
-  StyleSheet, SafeAreaView, StatusBar, KeyboardAvoidingView, Platform, Animated
+  StyleSheet, SafeAreaView, StatusBar, KeyboardAvoidingView, Platform, Animated,
+  Image // <--- 1. IMPORTACIÓN AÑADIDA
 } from 'react-native';
 import { Linking } from 'react-native';
 
@@ -163,7 +164,7 @@ const CustomAlert = ({ visible, title, message, onClose }) => (
   <Modal visible={visible} transparent animationType="fade">
     <View style={styles.alertBackdrop}>
       <View style={styles.alertCard}>
-        <Text style={styles.alertTitle}>⚠️ {title}</Text>
+        <Text style={styles.alertTitle}>⚠ {title}</Text>
         <Text style={styles.alertMessage}>{message}</Text>
         <TouchableOpacity style={styles.alertButton} onPress={onClose}>
           <Text style={styles.alertButtonText}>Entendido</Text>
@@ -566,13 +567,15 @@ const PerfilTab = ({
   </ScrollView>
 );
 
+// --- 2. COMPONENTE TabBar MODIFICADO ---
 const TabBar = ({ activeTab, setActiveTab }) => {
   const tabs = [
-    { key: 'campus', icon: '🏛', label: 'Campus' },
-    { key: 'servicio', icon: '🎓', label: 'Servicio' },
-    { key: 'eventos', icon: '📅', label: 'Eventos' },
-    { key: 'perfil', icon: '👤', label: 'Perfil' }
+    { key: 'campus', icon: require('./assets/campus.png'), label: 'Campus' },
+    { key: 'servicio', icon: require('./assets/servicio.png'), label: 'Servicio' },
+    { key: 'eventos', icon: require('./assets/eventos.png'), label: 'Eventos' },
+    { key: 'perfil', icon: require('./assets/perfil.png'), label: 'Perfil' }
   ];
+
   return (
     <View style={styles.tabBarContainer}>
       <View style={styles.tabBar}>
@@ -583,7 +586,20 @@ const TabBar = ({ activeTab, setActiveTab }) => {
             onPress={() => setActiveTab(tab.key)}
           >
             {activeTab === tab.key && <View style={styles.activeTabPill} />}
-            <Text style={styles.tabIcon}>{tab.icon}</Text>
+            
+            <Image
+              source={tab.icon}
+              style={[
+                styles.tabIconImage, // Usamos el nuevo estilo
+                { 
+                  // Coloreamos el ícono dinámicamente
+                  tintColor: activeTab === tab.key 
+                    ? theme.colors.primary 
+                    : theme.colors.subtext 
+                }
+              ]}
+            />
+            
             <Text
               style={[
                 styles.tabLabel,
@@ -847,7 +863,7 @@ const VidaUAQApp = () => {
               <Text style={styles.modalSectionTitle}>Requisitos</Text>
               {applyModalProject.requisitos.map((req, idx) => (
                 <Text
-                  key={`r-${idx}`}
+                  key={'r-' + idx}
                   style={styles.modalListItem}
                 >
                   • {req}
@@ -1284,7 +1300,16 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.sm,
     position: 'relative'
   },
-  tabIcon: { fontSize: 24 },
+  tabIcon: { fontSize: 24 }, // Dejamos este por si acaso
+
+  // --- 3. ESTILO AÑADIDO ---
+  tabIconImage: {
+    width: 50,
+    height: 50,
+    resizeMode: 'contain',
+  },
+  // -------------------------
+
   tabLabel: { ...theme.typography.caption, marginTop: 4 },
   activeTabLabel: { color: theme.colors.primary, fontWeight: '700' },
   activeTabPill: {
