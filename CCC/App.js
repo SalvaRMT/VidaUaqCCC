@@ -48,7 +48,7 @@ const userProfile = {
   horasRequeridas: 480
 };
 
-// Lugares del campus con dirección y query de Maps
+// Lugares del campus
 const campusLocations = [
   {
     id: 1,
@@ -157,7 +157,8 @@ const eventos = [
   }
 ];
 
-// --- Componente de Alerta Personalizada ---
+// --- Componentes puros (fuera de VidaUAQApp) ---
+
 const CustomAlert = ({ visible, title, message, onClose }) => (
   <Modal visible={visible} transparent animationType="fade">
     <View style={styles.alertBackdrop}>
@@ -172,7 +173,6 @@ const CustomAlert = ({ visible, title, message, onClose }) => (
   </Modal>
 );
 
-// --- Pantalla de Carga (splash) ---
 const LoadingScreen = () => {
   const opacity = useState(new Animated.Value(0))[0];
 
@@ -196,110 +196,25 @@ const LoadingScreen = () => {
   );
 };
 
-const VidaUAQApp = () => {
-  // App Loading
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Auth
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [authMode, setAuthMode] = useState('login'); // 'login' | 'signup'
-  const [authEmail, setAuthEmail] = useState('');
-  const [authPassword, setAuthPassword] = useState('');
-  const [authName, setAuthName] = useState('');
-  const [authPassword2, setAuthPassword2] = useState('');
-  const [signupSuccess, setSignupSuccess] = useState(false); // modal éxito
-
-  // Custom Alert
-  const [alertVisible, setAlertVisible] = useState(false);
-  const [alertInfo, setAlertInfo] = useState({ title: '', message: '' });
-
-  // App UI
-  const [activeTab, setActiveTab] = useState('campus');
-  const [searchText, setSearchText] = useState('');
-  const [selectedLocation, setSelectedLocation] = useState(null);
-  const [favorites, setFavorites] = useState([2]);
-
-  // Servicio Social: postulaciones y modales
-  const [applyModalProject, setApplyModalProject] = useState(null); // proyecto seleccionado para ver requisitos
-  const [appliedIds, setAppliedIds] = useState(new Set());          // ids ya postulados
-  const [appliedSuccessVisible, setAppliedSuccessVisible] = useState(false);
-
-  // Simula carga inicial
-  useEffect(() => {
-    const t = setTimeout(() => setIsLoading(false), 2000);
-    return () => clearTimeout(t);
-  }, []);
-
-  const showAlert = (title, message) => {
-    setAlertInfo({ title, message });
-    setAlertVisible(true);
-  };
-
-  const toggleFavorite = (id) => {
-    setFavorites(prev => prev.includes(id) ? prev.filter(fav => fav !== id) : [...prev, id]);
-  };
-
-  const renderStars = (rating) => {
-    return Array.from({ length: 5 }, (_, i) => (
-      <Text
-        key={i}
-        style={{
-          color: i < Math.round(rating) ? theme.colors.star : '#475569',
-          fontSize: 16
-        }}
-      >
-        ★
-      </Text>
-    ));
-  };
-
-  // Demo de login/registro
-  const handleAuthSubmit = () => {
-    if (!authEmail || !authPassword || (authMode === 'signup' && (!authName || !authPassword2))) {
-      showAlert('Campos incompletos', 'Por favor, rellena todos los campos para continuar.');
-      return;
-    }
-    if (authMode === 'signup' && authPassword !== authPassword2) {
-      showAlert('Error de Contraseña', 'Las contraseñas no coinciden. Inténtalo de nuevo.');
-      return;
-    }
-
-    if (authMode === 'signup') {
-      setSignupSuccess(true);
-      setAuthPassword('');
-      setAuthPassword2('');
-      setAuthName('');
-      return;
-    }
-
-    // Login
-    setIsAuthenticated(true);
-    setActiveTab('campus');
-  };
-
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    setAuthMode('login');
-    setAuthPassword('');
-    setAuthPassword2('');
-    setAuthName('');
-    setActiveTab('campus');
-    setSearchText('');
-    setSelectedLocation(null);
-    setFavorites([2]);
-  };
-
-  const isApplied = (id) => appliedIds.has(id);
-
-  // abrir Google Maps con la dirección del lugar
-  const openInMaps = (query) => {
-    const encoded = encodeURIComponent(query);
-    const url = `https://www.google.com/maps/search/?api=1&query=${encoded}`;
-    Linking.openURL(url);
-  };
-
-  // --- Pantalla de Login/Crear cuenta ---
-  const LoginScreen = () => (
+const LoginScreen = ({
+  authMode,
+  setAuthMode,
+  authEmail,
+  setAuthEmail,
+  authPassword,
+  setAuthPassword,
+  authName,
+  setAuthName,
+  authPassword2,
+  setAuthPassword2,
+  handleAuthSubmit,
+  signupSuccess,
+  setSignupSuccess,
+  alertVisible,
+  alertInfo,
+  setAlertVisible,
+}) => {
+  return (
     <SafeAreaView style={styles.loginContainer}>
       <StatusBar barStyle="light-content" backgroundColor={theme.colors.background} />
       <KeyboardAvoidingView
@@ -421,273 +336,446 @@ const VidaUAQApp = () => {
       />
     </SafeAreaView>
   );
+};
 
-  // --- Tabs ---
-  const CampusTab = () => (
-    <ScrollView
-      style={styles.container}
-      showsVerticalScrollIndicator={false}
-      keyboardShouldPersistTaps="handled"
-    >
-      <View style={styles.header}>
-        <Text style={styles.headerName}>🏛 Explora tu Campus</Text>
-        <Text style={styles.headerSubtitle}>Facultad de Informática - Juriquilla</Text>
-      </View>
+const CampusTab = ({
+  searchText,
+  setSearchText,
+  campusLocations,
+  favorites,
+  toggleFavorite,
+  renderStars,
+  setSelectedLocation,
+}) => (
+  <ScrollView
+    style={styles.container}
+    showsVerticalScrollIndicator={false}
+    keyboardShouldPersistTaps="handled"
+  >
+    <View style={styles.header}>
+      <Text style={styles.headerName}>🏛 Explora tu Campus</Text>
+      <Text style={styles.headerSubtitle}>Facultad de Informática - Juriquilla</Text>
+    </View>
 
-      <View style={styles.searchContainer}>
-        <Text style={{ fontSize: 20, marginRight: theme.spacing.sm }}>🔍</Text>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Buscar lugares..."
-          placeholderTextColor={theme.colors.subtext}
-          value={searchText}
-          onChangeText={setSearchText}
-          autoCorrect={false}
-          autoCapitalize="none"
+    <View style={styles.searchContainer}>
+      <Text style={{ fontSize: 20, marginRight: theme.spacing.sm }}>🔍</Text>
+      <TextInput
+        style={styles.searchInput}
+        placeholder="Buscar lugares..."
+        placeholderTextColor={theme.colors.subtext}
+        value={searchText}
+        onChangeText={setSearchText}
+        autoCorrect={false}
+        autoCapitalize="none"
+      />
+    </View>
+
+    {campusLocations
+      .filter(loc => loc.nombre.toLowerCase().includes(searchText.toLowerCase()))
+      .map(location => (
+        <TouchableOpacity
+          key={location.id}
+          style={styles.card}
+          onPress={() => setSelectedLocation(location)}
+        >
+          <View style={styles.cardHeader}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+              <Text style={{ fontSize: 24, marginRight: theme.spacing.sm }}>
+                {location.icon}
+              </Text>
+              <Text style={styles.cardTitle}>{location.nombre}</Text>
+            </View>
+            <TouchableOpacity onPress={() => toggleFavorite(location.id)}>
+              <Text style={{ fontSize: 28 }}>
+                {favorites.includes(location.id) ? '❤' : '🤍'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.description}>{location.descripcion}</Text>
+
+          <View style={styles.metaRow}>
+            <View style={styles.ratingContainer}>
+              {renderStars(location.rating)}
+              <Text style={styles.ratingText}>{location.rating}</Text>
+            </View>
+            <Text style={styles.scheduleText}>🕒 {location.horario}</Text>
+          </View>
+
+          <View style={styles.tagContainer}>
+            {location.servicios.map(servicio => (
+              <View key={servicio} style={styles.tag}>
+                <Text style={styles.tagText}>{servicio}</Text>
+              </View>
+            ))}
+          </View>
+        </TouchableOpacity>
+      ))}
+  </ScrollView>
+);
+
+const ServicioTab = ({
+  userProfile,
+  proyectosServicio,
+  isApplied,
+  setApplyModalProject
+}) => (
+  <ScrollView style={styles.container}>
+    <View style={styles.header}>
+      <Text style={styles.headerName}>🎓 Servicio Social</Text>
+    </View>
+
+    <View style={styles.card}>
+      <Text style={styles.cardTitle}>Progreso de Horas</Text>
+      <View style={styles.progressBar}>
+        <View
+          style={[
+            styles.progressFill,
+            {
+              width: `${(userProfile.horasServicio / userProfile.horasRequeridas) * 100}%`
+            }
+          ]}
         />
       </View>
+      <Text style={styles.progressLabel}>
+        {userProfile.horasServicio} de {userProfile.horasRequeridas} horas completadas
+      </Text>
+    </View>
 
-      {campusLocations
-        .filter(loc => loc.nombre.toLowerCase().includes(searchText.toLowerCase()))
-        .map(location => (
+    {proyectosServicio.map(proyecto => {
+      const applied = isApplied(proyecto.id);
+      return (
+        <View key={proyecto.id} style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>{proyecto.titulo}</Text>
+            <View
+              style={[styles.statusBadge, { backgroundColor: theme.colors.success }]}
+            >
+              <Text style={styles.statusBadgeText}>{proyecto.status}</Text>
+            </View>
+          </View>
+
+          <Text style={styles.description}>🏢 {proyecto.organizacion}</Text>
+
+          <View style={styles.metaRow}>
+            <Text style={styles.scheduleText}>{proyecto.modalidad}</Text>
+            <Text style={styles.scheduleText}>{proyecto.horas} horas</Text>
+          </View>
+
+          <View style={styles.tagContainer}>
+            {proyecto.tecnologias.map(tech => (
+              <View key={tech} style={styles.tag}>
+                <Text style={styles.tagText}>{tech}</Text>
+              </View>
+            ))}
+          </View>
+
           <TouchableOpacity
-            key={location.id}
-            style={styles.card}
-            onPress={() => setSelectedLocation(location)}
-          >
-            <View style={styles.cardHeader}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                <Text style={{ fontSize: 24, marginRight: theme.spacing.sm }}>
-                  {location.icon}
-                </Text>
-                <Text style={styles.cardTitle}>{location.nombre}</Text>
-              </View>
-              <TouchableOpacity onPress={() => toggleFavorite(location.id)}>
-                <Text style={{ fontSize: 28 }}>
-                  {favorites.includes(location.id) ? '❤' : '🤍'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.description}>{location.descripcion}</Text>
-
-            <View style={styles.metaRow}>
-              <View style={styles.ratingContainer}>
-                {renderStars(location.rating)}
-                <Text style={styles.ratingText}>{location.rating}</Text>
-              </View>
-              <Text style={styles.scheduleText}>🕒 {location.horario}</Text>
-            </View>
-
-            <View style={styles.tagContainer}>
-              {location.servicios.map(servicio => (
-                <View key={servicio} style={styles.tag}>
-                  <Text style={styles.tagText}>{servicio}</Text>
-                </View>
-              ))}
-            </View>
-          </TouchableOpacity>
-        ))}
-    </ScrollView>
-  );
-
-  const ServicioTab = () => (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerName}>🎓 Servicio Social</Text>
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Progreso de Horas</Text>
-        <View style={styles.progressBar}>
-          <View
+            disabled={applied}
             style={[
-              styles.progressFill,
-              {
-                width: `${(userProfile.horasServicio / userProfile.horasRequeridas) * 100}%`
-              }
+              styles.applyButton,
+              applied && { backgroundColor: theme.colors.muted }
             ]}
-          />
+            onPress={() => setApplyModalProject(proyecto)}
+          >
+            <Text style={styles.applyButtonText}>
+              {applied ? 'Postulado' : 'Postularse'}
+            </Text>
+          </TouchableOpacity>
         </View>
-        <Text style={styles.progressLabel}>
-          {userProfile.horasServicio} de {userProfile.horasRequeridas} horas completadas
+      );
+    })}
+  </ScrollView>
+);
+
+const EventosTab = ({ eventos }) => (
+  <ScrollView style={styles.container}>
+    <View style={styles.header}>
+      <Text style={styles.headerName}>📅 Eventos del Campus</Text>
+    </View>
+
+    {eventos.map(evento => {
+      const date = new Date(evento.fecha + 'T00:00:00');
+      const day = date.getDate();
+      const month = date
+        .toLocaleString('es-MX', { month: 'short' })
+        .replace('.', '');
+      return (
+        <View key={evento.id} style={styles.card}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={styles.eventDate}>
+              <Text style={styles.eventDay}>{day}</Text>
+              <Text style={styles.eventMonth}>{month}</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.cardTitle}>{evento.titulo}</Text>
+              <Text style={styles.description}>
+                {evento.lugar} - {evento.hora}
+              </Text>
+            </View>
+          </View>
+        </View>
+      );
+    })}
+  </ScrollView>
+);
+
+const PerfilTab = ({
+  userProfile,
+  favorites,
+  handleLogout
+}) => (
+  <ScrollView style={styles.container}>
+    <View style={styles.header}>
+      <Text style={styles.headerName}>👤 Mi Perfil</Text>
+    </View>
+    <View style={styles.profileCard}>
+      <View style={styles.avatar}>
+        <Text style={styles.avatarText}>
+          {userProfile.nombre
+            .split(' ')
+            .map(n => n[0])
+            .join('')}
         </Text>
       </View>
+      <Text style={styles.profileName}>{userProfile.nombre}</Text>
+      <Text style={styles.profileCareer}>{userProfile.carrera}</Text>
+      <Text style={styles.profileSemester}>{userProfile.semestre} semestre</Text>
 
-      {proyectosServicio.map(proyecto => {
-        const applied = isApplied(proyecto.id);
-        return (
-          <View key={proyecto.id} style={styles.card}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle}>{proyecto.titulo}</Text>
-              <View
-                style={[styles.statusBadge, { backgroundColor: theme.colors.success }]}
-              >
-                <Text style={styles.statusBadgeText}>{proyecto.status}</Text>
-              </View>
-            </View>
-
-            <Text style={styles.description}>🏢 {proyecto.organizacion}</Text>
-
-            <View style={styles.metaRow}>
-              <Text style={styles.scheduleText}>{proyecto.modalidad}</Text>
-              <Text style={styles.scheduleText}>{proyecto.horas} horas</Text>
-            </View>
-
-            <View style={styles.tagContainer}>
-              {proyecto.tecnologias.map(tech => (
-                <View key={tech} style={styles.tag}>
-                  <Text style={styles.tagText}>{tech}</Text>
-                </View>
-              ))}
-            </View>
-
-            <TouchableOpacity
-              disabled={applied}
-              style={[
-                styles.applyButton,
-                applied && { backgroundColor: theme.colors.muted }
-              ]}
-              onPress={() => setApplyModalProject(proyecto)}
-            >
-              <Text style={styles.applyButtonText}>
-                {applied ? 'Postulado' : 'Postularse'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        );
-      })}
-    </ScrollView>
-  );
-
-  const EventosTab = () => (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerName}>📅 Eventos del Campus</Text>
-      </View>
-
-      {eventos.map(evento => {
-        const date = new Date(evento.fecha + 'T00:00:00');
-        const day = date.getDate();
-        const month = date
-          .toLocaleString('es-MX', { month: 'short' })
-          .replace('.', '');
-        return (
-          <View key={evento.id} style={styles.card}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <View style={styles.eventDate}>
-                <Text style={styles.eventDay}>{day}</Text>
-                <Text style={styles.eventMonth}>{month}</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.cardTitle}>{evento.titulo}</Text>
-                <Text style={styles.description}>
-                  {evento.lugar} - {evento.hora}
-                </Text>
-              </View>
-            </View>
-          </View>
-        );
-      })}
-    </ScrollView>
-  );
-
-  const PerfilTab = () => (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerName}>👤 Mi Perfil</Text>
-      </View>
-      <View style={styles.profileCard}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {userProfile.nombre
-              .split(' ')
-              .map(n => n[0])
-              .join('')}
+      <View style={styles.statsContainer}>
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>{userProfile.horasServicio}</Text>
+          <Text style={styles.statLabel}>Completadas</Text>
+        </View>
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>
+            {userProfile.horasRequeridas - userProfile.horasServicio}
           </Text>
+          <Text style={styles.statLabel}>Restantes</Text>
         </View>
-        <Text style={styles.profileName}>{userProfile.nombre}</Text>
-        <Text style={styles.profileCareer}>{userProfile.carrera}</Text>
-        <Text style={styles.profileSemester}>{userProfile.semestre} semestre</Text>
-
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{userProfile.horasServicio}</Text>
-            <Text style={styles.statLabel}>Completadas</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>
-              {userProfile.horasRequeridas - userProfile.horasServicio}
-            </Text>
-            <Text style={styles.statLabel}>Restantes</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{favorites.length}</Text>
-            <Text style={styles.statLabel}>Favoritos</Text>
-          </View>
+        <View style={styles.statItem}>
+          <Text style={styles.statValue}>{favorites.length}</Text>
+          <Text style={styles.statLabel}>Favoritos</Text>
         </View>
-
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutButtonText}>Cerrar sesión</Text>
-        </TouchableOpacity>
       </View>
-    </ScrollView>
-  );
 
-  const TabBar = () => {
-    const tabs = [
-      { key: 'campus', icon: '🏛', label: 'Campus' },
-      { key: 'servicio', icon: '🎓', label: 'Servicio' },
-      { key: 'eventos', icon: '📅', label: 'Eventos' },
-      { key: 'perfil', icon: '👤', label: 'Perfil' }
-    ];
-    return (
-      <View style={styles.tabBarContainer}>
-        <View style={styles.tabBar}>
-          {tabs.map(tab => (
-            <TouchableOpacity
-              key={tab.key}
-              style={styles.tabItem}
-              onPress={() => setActiveTab(tab.key)}
+      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+        <Text style={styles.logoutButtonText}>Cerrar sesión</Text>
+      </TouchableOpacity>
+    </View>
+  </ScrollView>
+);
+
+const TabBar = ({ activeTab, setActiveTab }) => {
+  const tabs = [
+    { key: 'campus', icon: '🏛', label: 'Campus' },
+    { key: 'servicio', icon: '🎓', label: 'Servicio' },
+    { key: 'eventos', icon: '📅', label: 'Eventos' },
+    { key: 'perfil', icon: '👤', label: 'Perfil' }
+  ];
+  return (
+    <View style={styles.tabBarContainer}>
+      <View style={styles.tabBar}>
+        {tabs.map(tab => (
+          <TouchableOpacity
+            key={tab.key}
+            style={styles.tabItem}
+            onPress={() => setActiveTab(tab.key)}
+          >
+            {activeTab === tab.key && <View style={styles.activeTabPill} />}
+            <Text style={styles.tabIcon}>{tab.icon}</Text>
+            <Text
+              style={[
+                styles.tabLabel,
+                activeTab === tab.key && styles.activeTabLabel
+              ]}
             >
-              {activeTab === tab.key && <View style={styles.activeTabPill} />}
-              <Text style={styles.tabIcon}>{tab.icon}</Text>
-              <Text
-                style={[
-                  styles.tabLabel,
-                  activeTab === tab.key && styles.activeTabLabel
-                ]}
-              >
-                {tab.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+              {tab.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
+    </View>
+  );
+};
+
+// --- COMPONENTE PRINCIPAL ---
+const VidaUAQApp = () => {
+  // Loading
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Auth
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authMode, setAuthMode] = useState('login');
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authName, setAuthName] = useState('');
+  const [authPassword2, setAuthPassword2] = useState('');
+  const [signupSuccess, setSignupSuccess] = useState(false);
+
+  // Alert
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertInfo, setAlertInfo] = useState({ title: '', message: '' });
+
+  // UI / navegación
+  const [activeTab, setActiveTab] = useState('campus');
+  const [searchText, setSearchText] = useState('');
+  const [selectedLocation, setSelectedLocation] = useState(null);
+  const [favorites, setFavorites] = useState([2]);
+
+  // Servicio social
+  const [applyModalProject, setApplyModalProject] = useState(null);
+  const [appliedIds, setAppliedIds] = useState(new Set());
+  const [appliedSuccessVisible, setAppliedSuccessVisible] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setIsLoading(false), 2000);
+    return () => clearTimeout(t);
+  }, []);
+
+  const showAlert = (title, message) => {
+    setAlertInfo({ title, message });
+    setAlertVisible(true);
+  };
+
+  const toggleFavorite = (id) => {
+    setFavorites(prev =>
+      prev.includes(id) ? prev.filter(fav => fav !== id) : [...prev, id]
     );
   };
 
-  // --- RENDERIZADO PRINCIPAL ---
+  const renderStars = (rating) => {
+    return Array.from({ length: 5 }, (_, i) => (
+      <Text
+        key={i}
+        style={{
+          color: i < Math.round(rating) ? theme.colors.star : '#475569',
+          fontSize: 16
+        }}
+      >
+        ★
+      </Text>
+    ));
+  };
+
+  const handleAuthSubmit = () => {
+    if (!authEmail || !authPassword || (authMode === 'signup' && (!authName || !authPassword2))) {
+      showAlert('Campos incompletos', 'Por favor, rellena todos los campos para continuar.');
+      return;
+    }
+    if (authMode === 'signup' && authPassword !== authPassword2) {
+      showAlert('Error de Contraseña', 'Las contraseñas no coinciden. Inténtalo de nuevo.');
+      return;
+    }
+
+    if (authMode === 'signup') {
+      setSignupSuccess(true);
+      setAuthPassword('');
+      setAuthPassword2('');
+      setAuthName('');
+      return;
+    }
+
+    // login ok
+    setIsAuthenticated(true);
+    setActiveTab('campus');
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setAuthMode('login');
+    setAuthPassword('');
+    setAuthPassword2('');
+    setAuthName('');
+    setActiveTab('campus');
+    setSearchText('');
+    setSelectedLocation(null);
+    setFavorites([2]);
+  };
+
+  const isApplied = (id) => appliedIds.has(id);
+
+  const openInMaps = (query) => {
+    const encoded = encodeURIComponent(query);
+    const url = `https://www.google.com/maps/search/?api=1&query=${encoded}`;
+    Linking.openURL(url);
+  };
+
   if (isLoading) return <LoadingScreen />;
-  if (!isAuthenticated) return <LoginScreen />;
+
+  if (!isAuthenticated) {
+    return (
+      <LoginScreen
+        authMode={authMode}
+        setAuthMode={setAuthMode}
+        authEmail={authEmail}
+        setAuthEmail={setAuthEmail}
+        authPassword={authPassword}
+        setAuthPassword={setAuthPassword}
+        authName={authName}
+        setAuthName={setAuthName}
+        authPassword2={authPassword2}
+        setAuthPassword2={setAuthPassword2}
+        handleAuthSubmit={handleAuthSubmit}
+        signupSuccess={signupSuccess}
+        setSignupSuccess={setSignupSuccess}
+        alertVisible={alertVisible}
+        alertInfo={alertInfo}
+        setAlertVisible={setAlertVisible}
+      />
+    );
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <StatusBar barStyle="light-content" backgroundColor={theme.colors.background} />
 
-      {activeTab === 'campus' && <CampusTab />}
-      {activeTab === 'servicio' && <ServicioTab />}
-      {activeTab === 'eventos' && <EventosTab />}
-      {activeTab === 'perfil' && <PerfilTab />}
+      {activeTab === 'campus' && (
+        <CampusTab
+          searchText={searchText}
+          setSearchText={setSearchText}
+          campusLocations={campusLocations}
+          favorites={favorites}
+          toggleFavorite={toggleFavorite}
+          renderStars={renderStars}
+          setSelectedLocation={setSelectedLocation}
+        />
+      )}
 
-      <TabBar />
+      {activeTab === 'servicio' && (
+        <ServicioTab
+          userProfile={userProfile}
+          proyectosServicio={proyectosServicio}
+          isApplied={isApplied}
+          setApplyModalProject={setApplyModalProject}
+        />
+      )}
 
-      {/* Modal de lugar (campus) */}
+      {activeTab === 'eventos' && (
+        <EventosTab
+          eventos={eventos}
+        />
+      )}
+
+      {activeTab === 'perfil' && (
+        <PerfilTab
+          userProfile={userProfile}
+          favorites={favorites}
+          handleLogout={handleLogout}
+        />
+      )}
+
+      <TabBar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+      />
+
+      {/* Modal lugar campus */}
       <Modal visible={!!selectedLocation} animationType="slide" transparent>
         {selectedLocation && (
           <TouchableWithoutFeedback onPress={() => setSelectedLocation(null)}>
             <View style={styles.modalBackdrop}>
-              <TouchableWithoutFeedback onPress={() => { /* evita cerrar cuando tocas el contenido */ }}>
+              <TouchableWithoutFeedback>
                 <View style={styles.modalContent}>
                   <TouchableOpacity
                     style={styles.closeButton}
@@ -733,7 +821,7 @@ const VidaUAQApp = () => {
         )}
       </Modal>
 
-      {/* Modal de requisitos/actividades/horario para postularse */}
+      {/* Modal detalles postulación */}
       <Modal transparent visible={!!applyModalProject} animationType="fade">
         <View style={styles.successBackdrop}>
           {applyModalProject && (
@@ -834,7 +922,7 @@ const VidaUAQApp = () => {
         </View>
       </Modal>
 
-      {/* Modal de confirmación de postulación */}
+      {/* Modal confirmación postulación */}
       <Modal transparent visible={appliedSuccessVisible} animationType="fade">
         <View style={styles.successBackdrop}>
           <View style={styles.successCard}>
@@ -1240,7 +1328,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 
-  // Modal de proyecto (Postularse)
   modalProjectTitle: {
     ...theme.typography.h3,
     marginTop: theme.spacing.sm,
