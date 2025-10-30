@@ -3,7 +3,7 @@ import {
   View, Text, TouchableOpacity, TouchableWithoutFeedback,
   ScrollView, TextInput, Modal,
   StyleSheet, SafeAreaView, StatusBar, KeyboardAvoidingView, Platform, Animated,
-  Image // <--- 1. IMPORTACIÓN AÑADIDA
+  Image
 } from 'react-native';
 import { Linking } from 'react-native';
 
@@ -39,6 +39,13 @@ const theme = {
     elevation: 4,
   },
 };
+
+// >>> ESPACIO SUPERIOR GLOBAL
+const TOP_INSET = Platform.select({
+  ios: 12,
+  android: (StatusBar.currentHeight || 0) + 12,
+  default: 12,
+});
 
 // --- Datos demo ---
 const userProfile = {
@@ -307,7 +314,6 @@ const LoginScreen = ({
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Modal de éxito de registro */}
       <Modal visible={signupSuccess} transparent animationType="fade">
         <View style={styles.successBackdrop}>
           <View style={styles.successCard}>
@@ -328,7 +334,6 @@ const LoginScreen = ({
         </View>
       </Modal>
 
-      {/* Alerta personalizada */}
       <CustomAlert
         visible={alertVisible}
         title={alertInfo.title}
@@ -590,9 +595,8 @@ const TabBar = ({ activeTab, setActiveTab }) => {
             <Image
               source={tab.icon}
               style={[
-                styles.tabIconImage, // Usamos el nuevo estilo
+                styles.tabIconImage,
                 { 
-                  // Coloreamos el ícono dinámicamente
                   tintColor: activeTab === tab.key 
                     ? theme.colors.primary 
                     : theme.colors.subtext 
@@ -971,7 +975,11 @@ const styles = StyleSheet.create({
   loadingLogoImage: { width: 250, height: 250, resizeMode: 'contain' },
 
   // LOGIN
-  loginContainer: { flex: 1, backgroundColor: theme.colors.background },
+  loginContainer: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+    paddingTop: TOP_INSET,           // <<<<<< AÑADIDO
+  },
   loginLogo: {
     ...theme.typography.h1,
     fontSize: 48,
@@ -1097,8 +1105,12 @@ const styles = StyleSheet.create({
     fontSize: 16
   },
 
-  // APP
-  container: { flex: 1, backgroundColor: theme.colors.background },
+  // APP (aplica en Campus / Servicio / Eventos / Perfil)
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+    paddingTop: TOP_INSET,          // <<<<<< AÑADIDO
+  },
   header: { padding: theme.spacing.md },
   headerName: { ...theme.typography.h1 },
   headerSubtitle: {
@@ -1300,15 +1312,13 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.sm,
     position: 'relative'
   },
-  tabIcon: { fontSize: 24 }, // Dejamos este por si acaso
+  tabIcon: { fontSize: 24 },
 
-  // --- 3. ESTILO AÑADIDO ---
   tabIconImage: {
     width: 50,
     height: 50,
     resizeMode: 'contain',
   },
-  // -------------------------
 
   tabLabel: { ...theme.typography.caption, marginTop: 4 },
   activeTabLabel: { color: theme.colors.primary, fontWeight: '700' },
