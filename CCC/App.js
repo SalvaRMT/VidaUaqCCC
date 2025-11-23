@@ -41,7 +41,8 @@ import { auth, db } from './firebaseConfig';
 import { colors, globalStyles } from './styles/globalStyles';
 
 // Padding para que NO se meta debajo de la barra de notificaciones (Android)
-const ANDROID_TOP = Platform.OS === 'android' ? StatusBar.currentHeight || 0 : 0;
+const ANDROID_TOP =
+  Platform.OS === 'android' ? StatusBar.currentHeight || 0 : 0;
 
 // ================== DATOS FALLBACK LOCALES ==================
 
@@ -129,16 +130,27 @@ const DEFAULT_EVENTOS = [
 ];
 
 // ========= Utilidad para URLs de Google Drive =========
-// Si pegas algo como:
-// https://drive.google.com/file/d/ID_DEL_ARCHIVO/view?usp=sharing
-// lo convierte a:
-// https://drive.google.com/uc?export=view&id=ID_DEL_ARCHIVO
+// Soporta:
+//  - https://drive.google.com/file/d/ID/view?usp=sharing
+//  - https://drive.google.com/open?id=ID
 function normalizeImageUrl(url) {
   if (!url) return '';
-  const DRIVE_PATTERN = /https?:\/\/drive\.google\.com\/file\/d\/([^/]+)/;
-  const match = url.match(DRIVE_PATTERN);
+
+  const DRIVE_FILE = /https?:\/\/drive\.google\.com\/file\/d\/([^/]+)/;
+  const DRIVE_ID_PARAM = /https?:\/\/drive\.google\.com\/.*[?&]id=([^&]+)/;
+
+  let id = null;
+  let match = url.match(DRIVE_FILE);
   if (match && match[1]) {
-    const id = match[1];
+    id = match[1];
+  } else {
+    match = url.match(DRIVE_ID_PARAM);
+    if (match && match[1]) {
+      id = match[1];
+    }
+  }
+
+  if (id) {
     return `https://drive.google.com/uc?export=view&id=${id}`;
   }
   return url;
@@ -278,7 +290,11 @@ function LoginScreen({ onAuthenticated }) {
         { justifyContent: 'center', padding: 20, paddingTop: ANDROID_TOP },
       ]}
     >
-      <StatusBar barStyle="light-content" />
+      <StatusBar
+        barStyle="light-content"
+        translucent={false}
+        backgroundColor={colors.background}
+      />
       <Text
         style={[globalStyles.screenTitle, { textAlign: 'center', marginBottom: 4 }]}
       >
@@ -548,7 +564,9 @@ function CampusTab({ user }) {
     >
       <ScrollView
         style={globalStyles.screenContainer}
-        contentContainerStyle={{ paddingBottom: 20 }}
+        contentContainerStyle={{
+          paddingBottom: isMaestro ? 260 : 120, // más espacio para que el formulario no estorbe
+        }}
         showsVerticalScrollIndicator={false}
       >
         <Text style={globalStyles.screenTitle}>Explora tu campus</Text>
@@ -742,7 +760,11 @@ function ChatScreen({ proyecto, user, onBack }) {
     <SafeAreaView
       style={[globalStyles.safeArea, { paddingTop: ANDROID_TOP }]}
     >
-      <StatusBar barStyle="light-content" />
+      <StatusBar
+        barStyle="light-content"
+        translucent={false}
+        backgroundColor={colors.background}
+      />
       <View style={[globalStyles.screenContainer, { paddingBottom: 0 }]}>
         <View style={globalStyles.cardHeaderRow}>
           <TouchableOpacity onPress={onBack}>
@@ -1754,7 +1776,11 @@ export default function App() {
           },
         ]}
       >
-        <StatusBar barStyle="light-content" />
+        <StatusBar
+          barStyle="light-content"
+          translucent={false}
+          backgroundColor={colors.background}
+        />
         <Text style={globalStyles.screenTitle}>Cargando...</Text>
       </SafeAreaView>
     );
@@ -1778,7 +1804,11 @@ export default function App() {
     <SafeAreaView
       style={[globalStyles.safeArea, { paddingTop: ANDROID_TOP }]}
     >
-      <StatusBar barStyle="light-content" />
+      <StatusBar
+        barStyle="light-content"
+        translucent={false}
+        backgroundColor={colors.background}
+      />
       <View style={{ flex: 1 }}>
         {currentTab === 'Campus' && <CampusTab user={user} />}
         {currentTab === 'Servicio' && (
