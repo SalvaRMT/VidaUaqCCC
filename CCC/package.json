@@ -1,6 +1,6 @@
 {
   "name": "ccc",
- "version": "1.0.0",
+  "version": "1.0.0",
   "main": "index.js",
   "scripts": {
     "start": "expo start",
@@ -9,11 +9,16 @@
     "web": "expo start --web"
   },
   "dependencies": {
-    "@react-native-async-storage/async-storage": "^2.2.0",
+    "@react-native-community/datetimepicker": "8.4.4",
     "expo": "~54.0.13",
+    "expo-image-picker": "~17.0.8",
     "expo-status-bar": "~3.0.8",
+    "firebase": "^12.6.0",
     "react": "19.1.0",
-    "react-native": "0.81.4"
+    "react-native": "0.81.4",
+    "react-native-maps": "^1.26.18",
+    "react-native-svg": "15.12.1",
+    "rn-tourguide": "^3.3.2"
   },
   "private": true
 }

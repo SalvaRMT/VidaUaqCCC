@@ -1,733 +1,1795 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
-  View, Text, TouchableOpacity, ScrollView, TextInput, Modal,
-  StyleSheet, SafeAreaView, StatusBar, KeyboardAvoidingView, Platform, Animated
+  SafeAreaView,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  FlatList,
+  ScrollView,
+  StatusBar,
+  Alert,
+  Linking,
+  KeyboardAvoidingView,
+  Platform,
+  Image,
+  Modal,
 } from 'react-native';
 
-// --- Sistema de Diseño (Theme) ---
-const theme = {
-  colors: {
-    background: '#0F172A',
-    surface: '#1F2937',
-    text: '#E5E7EB',
-    subtext: '#94A3B8',
-    primary: '#22D3EE',
-    accent: '#38BDF8',
-    white: '#FFFFFF',
-    star: '#FBBF24',
-    success: '#22C55E',
-    highlight: 'rgba(34, 211, 238, 0.15)',
-    danger: '#EF4444',
-    muted: '#334155',
-  },
-  spacing: { sm: 8, md: 16, lg: 24 },
-  typography: {
-    h1: { fontSize: 32, fontWeight: '900', color: '#E5E7EB' },
-    h2: { fontSize: 24, fontWeight: '700', color: '#E5E7EB' },
-    h3: { fontSize: 18, fontWeight: '600', color: '#E5E7EB' },
-    body: { fontSize: 16, color: '#E5E7EB' },
-    caption: { fontSize: 12, color: '#94A3B8' },
-  },
-  borderRadius: { md: 12, lg: 20 },
-  shadow: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 4,
-  },
-};
+import DateTimePicker from '@react-native-community/datetimepicker';
 
-// --- Datos demo ---
-const userProfile = { nombre: 'Son Goku', carrera: 'Ingeniería en Software', semestre: '6to', horasServicio: 120, horasRequeridas: 480 };
-const campusLocations = [
-  { id: 1, nombre: 'Biblioteca Central Informática', categoria: 'Estudio', descripcion: 'Biblioteca especializada en tecnología y programación', horario: '7:00 AM - 9:00 PM', rating: 4.8, servicios: ['WiFi', 'Computadoras', 'Área silenciosa'], icon: '📚' },
-  { id: 2, nombre: 'Lab de Redes', categoria: 'Laboratorio', descripcion: 'Laboratorio con equipos Cisco para networking', horario: '8:00 AM - 6:00 PM', rating: 4.5, servicios: ['Equipos Cisco', 'Simuladores'], icon: '🔬' },
-  { id: 3, nombre: 'Cafetería FI "El comal++"', categoria: 'Comida', descripcion: 'Cafetería estudiantil con precios accesibles', horario: '7:30 AM - 4:00 PM', rating: 4.2, servicios: ['WiFi', 'Precios estudiante'], icon: '☕' }
+import {
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+} from 'firebase/auth';
+
+import {
+  collection,
+  doc,
+  setDoc,
+  getDoc,
+  onSnapshot,
+  query,
+  orderBy,
+  where,
+  addDoc,
+} from 'firebase/firestore';
+
+import { auth, db } from './firebaseConfig';
+import { colors, globalStyles } from './styles/globalStyles';
+
+// Padding para que NO se meta debajo de la barra de notificaciones (Android)
+const ANDROID_TOP = Platform.OS === 'android' ? StatusBar.currentHeight || 0 : 0;
+
+// ================== DATOS FALLBACK LOCALES ==================
+
+const DEFAULT_CAMPUS = [
+  {
+    id: 'l1',
+    nombre: 'Biblioteca FI Juriquilla',
+    categoria: 'Estudio',
+    descripcion: 'Espacio tranquilo con mesas, enchufes y WiFi.',
+    horario: 'Lunes a viernes, 8:00–20:00',
+    rating: 4.8,
+    servicios: ['WiFi', 'Enchufes', 'Silencio'],
+    emoji: '📚',
+    direccion: 'FI Juriquilla, edificio principal',
+    lat: 20.7042,
+    lng: -100.447,
+    accesibleRampa: true,
+    banosAccesibles: true,
+  },
+  {
+    id: 'l2',
+    nombre: 'Cafetería FI',
+    categoria: 'Comida',
+    descripcion: 'Comida rápida, café y snacks.',
+    horario: 'Lunes a viernes, 7:30–18:00',
+    rating: 4.3,
+    servicios: ['Comida económica', 'Bebidas', 'Mesas'],
+    emoji: '☕',
+    direccion: 'FI Juriquilla, planta baja',
+    lat: 20.7044,
+    lng: -100.446,
+    accesibleRampa: true,
+    banosAccesibles: false,
+  },
 ];
 
-// 👇 Requisitos/actividades/horarioDetallado
-const proyectosServicio = [
+const DEFAULT_PROYECTOS_SERVICIO = [
   {
-    id: 1,
-    titulo: 'Desarrollo Web para ONG',
-    organizacion: 'Fundación Educativa Querétaro',
-    descripcion: 'Crear sitio web con React para organización educativa',
-    modalidad: 'Híbrido',
-    horas: 150,
-    tecnologias: ['React', 'Node.js', 'MongoDB'],
-    status: 'Disponible',
-    requisitos: ['Kardex con 70% créditos', 'Constancia de seguro facultativo', 'Carta de motivos', 'Disponibilidad 15 hrs/sem'],
-    actividades: ['Desarrollar landing y dashboard', 'Integración con API REST', 'Soporte y documentación', 'Revisiones semanales con la ONG'],
-    horarioDetallado: 'Lunes a Viernes, 9:00–13:00 (flexible remoto/presencial)'
-  },
-  {
-    id: 2,
-    titulo: 'Sistema Hospitalario',
-    organizacion: 'Hospital General',
-    descripcion: 'Sistema de inventario médico',
+    id: 'p1',
+    titulo: 'Apoyo en laboratorio de cómputo',
+    organizacion: 'FI – Laboratorios',
+    descripcion: 'Control de equipos, registros y apoyo a usuarios.',
     modalidad: 'Presencial',
-    horas: 200,
-    tecnologias: ['Java', 'Spring', 'PostgreSQL'],
-    status: 'Disponible',
-    requisitos: ['Carta presentación de la Facultad', 'Identificación vigente', 'Compromiso de confidencialidad', 'Disponibilidad 20 hrs/sem'],
-    actividades: ['Captura y control de stock', 'Reportes y consultas', 'Pruebas y soporte a usuarios', 'Capacitación al personal'],
-    horarioDetallado: 'Lunes a Viernes, 8:00–12:00 en sitio'
+    horas: 120,
+    tecnologias: ['Soporte básico', 'Inventarios'],
+    requisitos: ['Ser alumno activo', 'Responsable'],
+    carrera: ['Sistemas', 'Computación'],
+    causa: 'Educación',
+    horarioFlexible: false,
+    accesible: true,
+  },
+  {
+    id: 'p2',
+    titulo: 'Difusión científica en redes',
+    organizacion: 'Divulgación UAQ',
+    descripcion: 'Crear contenido y difundir eventos científicos.',
+    modalidad: 'Híbrida',
+    horas: 100,
+    tecnologias: ['Redes sociales', 'Diseño básico'],
+    requisitos: ['Gusto por la divulgación'],
+    carrera: ['Cualquiera'],
+    causa: 'Divulgación',
+    horarioFlexible: true,
+    accesible: true,
+  },
+];
+
+const DEFAULT_EVENTOS = [
+  {
+    id: 'e1',
+    titulo: 'Feria de Servicio Social UAQ',
+    descripcion: 'Conoce opciones de servicio social y prácticas.',
+    fecha: '2025-03-15',
+    campus: 'Juriquilla',
+    tipo: 'Académico',
+  },
+  {
+    id: 'e2',
+    titulo: 'Torneo de fútbol inter-facultades',
+    descripcion: 'Evento deportivo entre facultades UAQ.',
+    fecha: '2025-04-10',
+    campus: 'Centro',
+    tipo: 'Deportivo',
+  },
+];
+
+// ========= Utilidad para URLs de Google Drive =========
+// Si pegas algo como:
+// https://drive.google.com/file/d/ID_DEL_ARCHIVO/view?usp=sharing
+// lo convierte a:
+// https://drive.google.com/uc?export=view&id=ID_DEL_ARCHIVO
+function normalizeImageUrl(url) {
+  if (!url) return '';
+  const DRIVE_PATTERN = /https?:\/\/drive\.google\.com\/file\/d\/([^/]+)/;
+  const match = url.match(DRIVE_PATTERN);
+  if (match && match[1]) {
+    const id = match[1];
+    return `https://drive.google.com/uc?export=view&id=${id}`;
   }
-];
+  return url;
+}
 
-const eventos = [
-  { id: 1, titulo: 'Hackathon FI 2025', fecha: '2025-09-15', hora: '9:00 AM', lugar: 'Aula Magna', descripcion: '48 horas de programación intensiva' },
-  { id: 2, titulo: 'Conferencia IA', fecha: '2025-09-20', hora: '4:00 PM', lugar: 'Aula Magna', descripcion: 'Experto de Google hablará sobre IA' }
-];
+// ================== TAB BAR ==================
 
-// --- Componente de Alerta Personalizada ---
-const CustomAlert = ({ visible, title, message, onClose }) => (
-  <Modal visible={visible} transparent animationType="fade">
-    <View style={styles.alertBackdrop}>
-      <View style={styles.alertCard}>
-        <Text style={styles.alertTitle}>⚠️ {title}</Text>
-        <Text style={styles.alertMessage}>{message}</Text>
-        <TouchableOpacity style={styles.alertButton} onPress={onClose}>
-          <Text style={styles.alertButtonText}>Entendido</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  </Modal>
-);
-
-// --- Pantalla de Carga (splash) ---
-const LoadingScreen = () => {
-  const opacity = useState(new Animated.Value(0))[0];
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(opacity, { toValue: 1, duration: 1000, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0.7, duration: 1000, useNativeDriver: true }),
-      ])
-    ).start();
-  }, [opacity]);
+function BottomTabBar({ currentTab, onTabChange }) {
+  const tabs = [
+    { id: 'Campus', label: 'Campus', icon: '📍' },
+    { id: 'Servicio', label: 'Servicio', icon: '🤝' },
+    { id: 'Eventos', label: 'Eventos', icon: '📅' },
+    { id: 'Perfil', label: 'Perfil', icon: '👤' },
+  ];
 
   return (
-    <View style={styles.loadingContainer}>
-      <StatusBar barStyle="light-content" backgroundColor={theme.colors.background} />
-      <Animated.Image
-        source={require('./assets/logo.png')}
-        style={[styles.loadingLogoImage, { opacity }]}
-      />
+    <View style={globalStyles.bottomTabBar} accessible accessibilityRole="tablist">
+      {tabs.map(tab => {
+        const active = tab.id === currentTab;
+        return (
+          <TouchableOpacity
+            key={tab.id}
+            style={[
+              globalStyles.bottomTabItem,
+              { backgroundColor: active ? colors.primaryDark : 'transparent' },
+            ]}
+            onPress={() => onTabChange(tab.id)}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: active }}
+            accessibilityLabel={tab.label}
+          >
+            <Text style={globalStyles.bottomTabIcon}>{tab.icon}</Text>
+            <Text
+              style={[
+                globalStyles.bottomTabLabel,
+                active && globalStyles.bottomTabLabelActive,
+              ]}
+            >
+              {tab.label}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
     </View>
   );
-};
+}
 
-const VidaUAQApp = () => {
-  // App Loading
-  const [isLoading, setIsLoading] = useState(true);
+// ================== LOGIN / REGISTRO ==================
 
-  // Auth
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [authMode, setAuthMode] = useState('login'); // 'login' | 'signup'
-  const [authEmail, setAuthEmail] = useState('');
-  const [authPassword, setAuthPassword] = useState('');
-  const [authName, setAuthName] = useState('');
-  const [authPassword2, setAuthPassword2] = useState('');
-  const [signupSuccess, setSignupSuccess] = useState(false); // modal éxito
+function LoginScreen({ onAuthenticated }) {
+  const [isRegister, setIsRegister] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [nombre, setNombre] = useState('');
+  const [role, setRole] = useState('alumno'); // alumno | maestro
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
-  // Custom Alert
-  const [alertVisible, setAlertVisible] = useState(false);
-  const [alertInfo, setAlertInfo] = useState({ title: '', message: '' });
+  const handleSubmit = async () => {
+    setErrorMsg('');
 
-  // App UI
-  const [activeTab, setActiveTab] = useState('campus');
+    if (!email || !password || (isRegister && !nombre)) {
+      setErrorMsg('Llena todos los campos requeridos.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      if (isRegister) {
+        // === REGISTRO ===
+        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        const uid = cred.user.uid;
+
+        const userData = {
+          uid,
+          email,
+          nombre,
+          role,
+          horasServicio: 0,
+          horasRequeridas: 480,
+          createdAt: new Date().toISOString(),
+        };
+
+        await setDoc(doc(db, 'users', uid), userData);
+        onAuthenticated(userData);
+      } else {
+        // === LOGIN ===
+        const cred = await signInWithEmailAndPassword(auth, email, password);
+        const uid = cred.user.uid;
+
+        const userRef = doc(db, 'users', uid);
+        const snap = await getDoc(userRef);
+
+        let userData;
+        if (snap.exists()) {
+          userData = snap.data();
+        } else {
+          userData = {
+            uid,
+            email: cred.user.email,
+            nombre: cred.user.email,
+            role: 'alumno',
+            horasServicio: 0,
+            horasRequeridas: 480,
+            createdAt: new Date().toISOString(),
+          };
+          await setDoc(userRef, userData);
+        }
+
+        onAuthenticated(userData);
+      }
+    } catch (err) {
+      console.log('Código de error auth:', err.code);
+      console.log('Mensaje completo:', err.message);
+
+      if (err.code === 'auth/user-not-found') {
+        setErrorMsg('No existe una cuenta con ese correo.');
+      } else if (err.code === 'auth/invalid-credential') {
+        setErrorMsg('Correo o contraseña incorrectos.');
+      } else if (err.code === 'auth/invalid-email') {
+        setErrorMsg('El correo no tiene un formato válido.');
+      } else if (err.code === 'auth/api-key-not-valid') {
+        setErrorMsg('Hay un problema con la configuración de Firebase (apiKey).');
+      } else {
+        setErrorMsg('Error de autenticación: ' + (err.message || ''));
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <SafeAreaView
+      style={[
+        globalStyles.safeArea,
+        { justifyContent: 'center', padding: 20, paddingTop: ANDROID_TOP },
+      ]}
+    >
+      <StatusBar barStyle="light-content" />
+      <Text
+        style={[globalStyles.screenTitle, { textAlign: 'center', marginBottom: 4 }]}
+      >
+        Vida UAQ
+      </Text>
+      <Text
+        style={[
+          globalStyles.screenSubtitle,
+          { textAlign: 'center', marginBottom: 20 },
+        ]}
+      >
+        {isRegister
+          ? 'Registra tu cuenta con correo UAQ'
+          : 'Inicia sesión con tu correo UAQ'}
+      </Text>
+
+      {isRegister && (
+        <TextInput
+          placeholder="Nombre completo"
+          placeholderTextColor={colors.textMuted}
+          style={globalStyles.input}
+          value={nombre}
+          onChangeText={setNombre}
+        />
+      )}
+
+      <TextInput
+        placeholder="Correo institucional"
+        placeholderTextColor={colors.textMuted}
+        style={globalStyles.input}
+        value={email}
+        autoCapitalize="none"
+        keyboardType="email-address"
+        onChangeText={setEmail}
+      />
+
+      <TextInput
+        placeholder="Contraseña"
+        placeholderTextColor={colors.textMuted}
+        style={globalStyles.input}
+        secureTextEntry
+        value={password}
+        onChangeText={setPassword}
+      />
+
+      {isRegister && (
+        <View style={{ flexDirection: 'row', marginBottom: 10 }}>
+          <TouchableOpacity
+            style={[
+              globalStyles.pill,
+              { borderColor: role === 'alumno' ? colors.primary : colors.border },
+            ]}
+            onPress={() => setRole('alumno')}
+          >
+            <Text
+              style={[
+                globalStyles.pillText,
+                role === 'alumno' && globalStyles.pillTextActive,
+              ]}
+            >
+              🎓 Alumno
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              globalStyles.pill,
+              { borderColor: role === 'maestro' ? colors.primary : colors.border },
+            ]}
+            onPress={() => setRole('maestro')}
+          >
+            <Text
+              style={[
+                globalStyles.pillText,
+                role === 'maestro' && globalStyles.pillTextActive,
+              ]}
+            >
+              👨‍🏫 Maestro
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {errorMsg ? <Text style={globalStyles.errorText}>{errorMsg}</Text> : null}
+
+      <TouchableOpacity
+        style={globalStyles.primaryButton}
+        onPress={handleSubmit}
+        disabled={loading}
+      >
+        <Text style={globalStyles.primaryButtonText}>
+          {loading
+            ? 'Procesando...'
+            : isRegister
+            ? 'Crear cuenta'
+            : 'Iniciar sesión'}
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={globalStyles.outlineButton}
+        onPress={() => {
+          setIsRegister(!isRegister);
+          setErrorMsg('');
+        }}
+      >
+        <Text style={globalStyles.outlineButtonText}>
+          {isRegister
+            ? '¿Ya tienes cuenta? Inicia sesión'
+            : '¿Aún no tienes cuenta? Regístrate'}
+        </Text>
+      </TouchableOpacity>
+    </SafeAreaView>
+  );
+}
+
+// ================== CAMPUS (MAPA + LISTA + CREAR UBICACIÓN) ==================
+
+function CampusTab({ user }) {
+  const isMaestro = user?.role === 'maestro';
+  const [lugares, setLugares] = useState([]);
   const [searchText, setSearchText] = useState('');
-  const [selectedLocation, setSelectedLocation] = useState(null);
-  const [favorites, setFavorites] = useState([2]);
+  const [selectedLugar, setSelectedLugar] = useState(null);
 
-  // Servicio Social: postulaciones y modales
-  const [applyModalProject, setApplyModalProject] = useState(null); // proyecto seleccionado para ver requisitos
-  const [appliedIds, setAppliedIds] = useState(new Set());          // ids ya postulados
-  const [appliedSuccessVisible, setAppliedSuccessVisible] = useState(false);
+  // form maestro
+  const [nuevoNombre, setNuevoNombre] = useState('');
+  const [nuevoDescripcion, setNuevoDescripcion] = useState('');
+  const [nuevoCategoria, setNuevoCategoria] = useState('');
+  const [nuevoHorario, setNuevoHorario] = useState('');
+  const [nuevoDireccion, setNuevoDireccion] = useState('');
+  const [nuevoImageUrl, setNuevoImageUrl] = useState('');
+  const [guardando, setGuardando] = useState(false);
 
-  // Simula carga inicial
   useEffect(() => {
-    const t = setTimeout(() => setIsLoading(false), 2000);
-    return () => clearTimeout(t);
+    const qCampus = query(collection(db, 'campus'), orderBy('nombre'));
+    const unsub = onSnapshot(
+      qCampus,
+      snap => {
+        const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        setLugares(data);
+      },
+      err => console.error('Error cargando campus', err),
+    );
+    return unsub;
   }, []);
 
-  const showAlert = (title, message) => {
-    setAlertInfo({ title, message });
-    setAlertVisible(true);
+  const data = lugares.length ? lugares : DEFAULT_CAMPUS;
+
+  const filtered = data.filter(item => {
+    const t = searchText.trim().toLowerCase();
+    if (!t) return true;
+    return (
+      item.nombre?.toLowerCase().includes(t) ||
+      item.categoria?.toLowerCase().includes(t) ||
+      item.descripcion?.toLowerCase().includes(t)
+    );
+  });
+
+  const openInMaps = direccion => {
+    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+      direccion,
+    )}`;
+    Linking.openURL(url).catch(() =>
+      Alert.alert('No se pudo abrir Google Maps'),
+    );
   };
 
-  const toggleFavorite = (id) => {
-    setFavorites(prev => prev.includes(id) ? prev.filter(fav => fav !== id) : [...prev, id]);
-  };
-
-  const renderStars = (rating) => {
-    return Array.from({ length: 5 }, (_, i) => (
-      <Text key={i} style={{ color: i < Math.round(rating) ? theme.colors.star : '#475569', fontSize: 16 }}>★</Text>
-    ));
-  };
-
-  // Demo de login/registro
-  const handleAuthSubmit = () => {
-    if (!authEmail || !authPassword || (authMode === 'signup' && (!authName || !authPassword2))) {
-      showAlert('Campos incompletos', 'Por favor, rellena todos los campos para continuar.');
+  const crearLugar = async () => {
+    if (!nuevoNombre.trim()) {
+      Alert.alert('Nombre requerido');
       return;
     }
-    if (authMode === 'signup' && authPassword !== authPassword2) {
-      showAlert('Error de Contraseña', 'Las contraseñas no coinciden. Inténtalo de nuevo.');
-      return;
-    }
+    try {
+      setGuardando(true);
 
-    if (authMode === 'signup') {
-      setSignupSuccess(true);
-      setAuthPassword('');
-      setAuthPassword2('');
-      setAuthName('');
-      return;
-    }
+      const rawUrl = nuevoImageUrl.trim();
+      const imageUrl = normalizeImageUrl(rawUrl);
 
-    // Login
-    setIsAuthenticated(true);
-    setActiveTab('campus');
+      await addDoc(collection(db, 'campus'), {
+        nombre: nuevoNombre.trim(),
+        descripcion: nuevoDescripcion.trim(),
+        categoria: nuevoCategoria.trim() || 'General',
+        horario: nuevoHorario.trim(),
+        direccion: nuevoDireccion.trim(),
+        imageUrl: imageUrl || '',
+        createdBy: user?.uid || null,
+        createdAt: Date.now(),
+      });
+
+      setNuevoNombre('');
+      setNuevoDescripcion('');
+      setNuevoCategoria('');
+      setNuevoHorario('');
+      setNuevoDireccion('');
+      setNuevoImageUrl('');
+    } catch (e) {
+      console.error(e);
+      Alert.alert('No se pudo crear la ubicación');
+    } finally {
+      setGuardando(false);
+    }
   };
 
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    setAuthMode('login');
-    setAuthPassword('');
-    setAuthPassword2('');
-    setAuthName('');
-    setActiveTab('campus');
-    setSearchText('');
-    setSelectedLocation(null);
-    setFavorites([2]);
-  };
+  const renderItem = ({ item }) => (
+    <TouchableOpacity onPress={() => setSelectedLugar(item)}>
+      <View style={globalStyles.card}>
+        <View style={globalStyles.cardHeaderRow}>
+          <Text style={globalStyles.cardTitle}>
+            {item.emoji || '📍'} {item.nombre}
+          </Text>
+          {typeof item.rating === 'number' && (
+            <View style={globalStyles.badge}>
+              <Text style={globalStyles.badgeText}>⭐ {item.rating}</Text>
+            </View>
+          )}
+        </View>
 
-  const isApplied = (id) => appliedIds.has(id);
+        <Text style={globalStyles.infoText}>{item.descripcion}</Text>
 
-  // --- Pantalla de Login/Crear cuenta ---
-  const LoginScreen = () => (
-    <SafeAreaView style={styles.loginContainer}>
-      <StatusBar barStyle="light-content" backgroundColor={theme.colors.background} />
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, justifyContent: 'center' }}>
-        <ScrollView
-          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingBottom: theme.spacing.lg }}
-          keyboardShouldPersistTaps="always"
-        >
-          <View style={{ padding: theme.spacing.lg }}>
-            <Text style={styles.loginLogo}>UAQ</Text>
-            <Text style={styles.loginTitle}>Vida Universitaria</Text>
-            <Text style={styles.loginSubtitle}>
-              {authMode === 'login' ? 'Inicia sesión para continuar' : 'Crea tu cuenta institucional'}
+        <View style={globalStyles.cardChipRow}>
+          {item.categoria && (
+            <View style={globalStyles.chip}>
+              <Text style={globalStyles.chipText}>{item.categoria}</Text>
+            </View>
+          )}
+          {item.horario && (
+            <View style={globalStyles.chip}>
+              <Text style={globalStyles.chipText}>{item.horario}</Text>
+            </View>
+          )}
+          {item.accesibleRampa && (
+            <View style={globalStyles.chip}>
+              <Text style={globalStyles.chipText}>♿ Rampas</Text>
+            </View>
+          )}
+          {item.banosAccesibles && (
+            <View style={globalStyles.chip}>
+              <Text style={globalStyles.chipText}>🚻 Baños accesibles</Text>
+            </View>
+          )}
+        </View>
+
+        {Array.isArray(item.servicios) && item.servicios.length > 0 && (
+          <Text style={globalStyles.infoText}>
+            Servicios: {item.servicios.join(' • ')}
+          </Text>
+        )}
+
+        {item.direccion && (
+          <TouchableOpacity
+            style={globalStyles.outlineButton}
+            onPress={() => openInMaps(item.direccion)}
+          >
+            <Text style={globalStyles.outlineButtonText}>
+              Abrir en Google Maps
             </Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </TouchableOpacity>
+  );
 
-            {authMode === 'signup' && (
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Nombre completo</Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Tu nombre"
-                  placeholderTextColor={theme.colors.subtext}
-                  value={authName}
-                  onChangeText={setAuthName}
-                  autoCapitalize="words"
-                />
-              </View>
-            )}
+  return (
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={80}
+    >
+      <ScrollView
+        style={globalStyles.screenContainer}
+        contentContainerStyle={{ paddingBottom: 20 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={globalStyles.screenTitle}>Explora tu campus</Text>
+        <Text style={globalStyles.screenSubtitle}>
+          Busca espacios por nombre, categoría o descripción y ábrelos en Maps.
+        </Text>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Correo Institucional</Text>
-              <TextInput
-                style={styles.textInput}
-                placeholder="alguien@uaq.edu.mx"
-                placeholderTextColor={theme.colors.subtext}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                value={authEmail}
-                onChangeText={setAuthEmail}
+        <TextInput
+          placeholder="Buscar (biblioteca, cafetería, laboratorio...)"
+          placeholderTextColor={colors.textMuted}
+          style={globalStyles.input}
+          value={searchText}
+          onChangeText={setSearchText}
+        />
+
+        <FlatList
+          data={filtered}
+          keyExtractor={item => item.id}
+          renderItem={renderItem}
+          scrollEnabled={false}
+        />
+
+        {isMaestro && (
+          <View style={[globalStyles.card, { marginTop: 12 }]}>
+            <Text style={globalStyles.cardTitle}>Crear ubicación</Text>
+            <TextInput
+              placeholder="Nombre del lugar"
+              placeholderTextColor={colors.textMuted}
+              style={globalStyles.input}
+              value={nuevoNombre}
+              onChangeText={setNuevoNombre}
+            />
+            <TextInput
+              placeholder="Descripción"
+              placeholderTextColor={colors.textMuted}
+              style={[globalStyles.input, { height: 80 }]}
+              multiline
+              value={nuevoDescripcion}
+              onChangeText={setNuevoDescripcion}
+            />
+            <TextInput
+              placeholder="Categoría (Estudio, Comida...)"
+              placeholderTextColor={colors.textMuted}
+              style={globalStyles.input}
+              value={nuevoCategoria}
+              onChangeText={setNuevoCategoria}
+            />
+            <TextInput
+              placeholder="Horario"
+              placeholderTextColor={colors.textMuted}
+              style={globalStyles.input}
+              value={nuevoHorario}
+              onChangeText={setNuevoHorario}
+            />
+            <TextInput
+              placeholder="Dirección breve"
+              placeholderTextColor={colors.textMuted}
+              style={globalStyles.input}
+              value={nuevoDireccion}
+              onChangeText={setNuevoDireccion}
+            />
+            <TextInput
+              placeholder="URL pública de la foto (Drive, Imgur...)"
+              placeholderTextColor={colors.textMuted}
+              style={globalStyles.input}
+              value={nuevoImageUrl}
+              onChangeText={setNuevoImageUrl}
+              autoCapitalize="none"
+            />
+
+            {nuevoImageUrl ? (
+              <Image
+                source={{ uri: normalizeImageUrl(nuevoImageUrl) }}
+                style={globalStyles.modalImage}
+                resizeMode="cover"
               />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Contraseña</Text>
-              <TextInput
-                style={styles.textInput}
-                placeholder="••••••••"
-                placeholderTextColor={theme.colors.subtext}
-                secureTextEntry
-                value={authPassword}
-                onChangeText={setAuthPassword}
-              />
-            </View>
-
-            {authMode === 'signup' && (
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Confirmar contraseña</Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="••••••••"
-                  placeholderTextColor={theme.colors.subtext}
-                  secureTextEntry
-                  value={authPassword2}
-                  onChangeText={setAuthPassword2}
-                />
-              </View>
-            )}
-
-            <TouchableOpacity style={styles.loginButton} onPress={handleAuthSubmit}>
-              <Text style={styles.loginButtonText}>{authMode === 'login' ? 'Ingresar' : 'Crear cuenta'}</Text>
-            </TouchableOpacity>
+            ) : null}
 
             <TouchableOpacity
-              style={styles.switchAuthContainer}
-              onPress={() => setAuthMode(prev => (prev === 'login' ? 'signup' : 'login'))}
+              style={globalStyles.primaryButton}
+              onPress={crearLugar}
+              disabled={guardando}
             >
-              <Text style={styles.switchAuthText}>
-                {authMode === 'login' ? '¿No tienes cuenta? Crear cuenta' : '¿Ya tienes cuenta? Inicia sesión'}
+              <Text style={globalStyles.primaryButtonText}>
+                {guardando ? 'Guardando...' : 'Guardar ubicación'}
               </Text>
             </TouchableOpacity>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        )}
+      </ScrollView>
 
-      {/* Modal de éxito de registro */}
-      <Modal visible={signupSuccess} transparent animationType="fade">
-        <View style={styles.successBackdrop}>
-          <View style={styles.successCard}>
-            <Text style={styles.successTitle}>✅ Cuenta creada</Text>
-            <Text style={styles.successMsg}>
-              Tu cuenta se creó con éxito. Pulsa “Volver al inicio” para iniciar sesión.
-            </Text>
-            <TouchableOpacity
-              style={styles.successBtn}
-              onPress={() => {
-                setSignupSuccess(false);
-                setAuthMode('login');
-              }}
-            >
-              <Text style={styles.successBtnText}>Volver al inicio</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Alerta personalizada */}
-      <CustomAlert
-        visible={alertVisible}
-        title={alertInfo.title}
-        message={alertInfo.message}
-        onClose={() => setAlertVisible(false)}
-      />
-    </SafeAreaView>
-  );
-
-  // --- RENDERIZADO PRINCIPAL ---
-  if (isLoading) return <LoadingScreen />;
-  if (!isAuthenticated) return <LoginScreen />;
-
-  // --- Tabs ---
-  const CampusTab = () => (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-      <View style={styles.header}>
-        <Text style={styles.headerName}>🏛 Explora tu Campus</Text>
-        <Text style={styles.headerSubtitle}>Facultad de Informática - Juriquilla</Text>
-      </View>
-
-      <View style={styles.searchContainer}>
-        <Text style={{ fontSize: 20, marginRight: theme.spacing.sm }}>🔍</Text>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Buscar lugares..."
-          placeholderTextColor={theme.colors.subtext}
-          value={searchText}
-          onChangeText={setSearchText}
-          autoCorrect={false}
-          autoCapitalize="none"
-        />
-      </View>
-
-      {campusLocations
-        .filter(loc => loc.nombre.toLowerCase().includes(searchText.toLowerCase()))
-        .map(location => (
-          <TouchableOpacity key={location.id} style={styles.card} onPress={() => setSelectedLocation(location)}>
-            <View style={styles.cardHeader}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                <Text style={{ fontSize: 24, marginRight: theme.spacing.sm }}>{location.icon}</Text>
-                <Text style={styles.cardTitle}>{location.nombre}</Text>
-              </View>
-              <TouchableOpacity onPress={() => toggleFavorite(location.id)}>
-                <Text style={{ fontSize: 28 }}>{favorites.includes(location.id) ? '❤' : '🤍'}</Text>
+      {selectedLugar && (
+        <Modal
+          transparent
+          animationType="fade"
+          visible
+          onRequestClose={() => setSelectedLugar(null)}
+        >
+          <View style={globalStyles.modalOverlay}>
+            <View style={globalStyles.modalCard}>
+              <Text style={globalStyles.cardTitle}>{selectedLugar.nombre}</Text>
+              {selectedLugar.imageUrl ? (
+                <Image
+                  source={{ uri: normalizeImageUrl(selectedLugar.imageUrl) }}
+                  style={globalStyles.modalImage}
+                  resizeMode="cover"
+                />
+              ) : null}
+              <Text style={globalStyles.modalDescription}>
+                {selectedLugar.descripcion}
+              </Text>
+              <TouchableOpacity
+                style={globalStyles.outlineButton}
+                onPress={() => setSelectedLugar(null)}
+              >
+                <Text style={globalStyles.outlineButtonText}>Cerrar</Text>
               </TouchableOpacity>
             </View>
-
-            <Text style={styles.description}>{location.descripcion}</Text>
-
-            <View style={styles.metaRow}>
-              <View style={styles.ratingContainer}>
-                {renderStars(location.rating)}
-                <Text style={styles.ratingText}>{location.rating}</Text>
-              </View>
-              <Text style={styles.scheduleText}>🕒 {location.horario}</Text>
-            </View>
-
-            <View style={styles.tagContainer}>
-              {location.servicios.map(servicio => (
-                <View key={servicio} style={styles.tag}>
-                  <Text style={styles.tagText}>{servicio}</Text>
-                </View>
-              ))}
-            </View>
-          </TouchableOpacity>
-        ))}
-    </ScrollView>
+          </View>
+        </Modal>
+      )}
+    </KeyboardAvoidingView>
   );
+}
 
-  const ServicioTab = () => (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerName}>🎓 Servicio Social</Text>
-      </View>
+// ================== CHAT SIMPLE POR PROYECTO ==================
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Progreso de Horas</Text>
-        <View style={styles.progressBar}>
-          <View
-            style={[
-              styles.progressFill,
-              { width: `${(userProfile.horasServicio / userProfile.horasRequeridas) * 100}%` }
-            ]}
-          />
-        </View>
-        <Text style={styles.progressLabel}>
-          {userProfile.horasServicio} de {userProfile.horasRequeridas} horas completadas
-        </Text>
-      </View>
+function ChatScreen({ proyecto, user, onBack }) {
+  const [mensaje, setMensaje] = useState('');
+  const [mensajes, setMensajes] = useState([]);
 
-      {proyectosServicio.map(proyecto => {
-        const applied = isApplied(proyecto.id);
-        return (
-          <View key={proyecto.id} style={styles.card}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle}>{proyecto.titulo}</Text>
-              <View style={[styles.statusBadge, { backgroundColor: theme.colors.success }]}>
-                <Text style={styles.statusBadgeText}>{proyecto.status}</Text>
-              </View>
-            </View>
+  useEffect(() => {
+    if (!proyecto) return;
 
-            <Text style={styles.description}>🏢 {proyecto.organizacion}</Text>
+    // SIN orderBy para no pedir índice. Ordenamos en cliente.
+    const qMensajes = query(
+      collection(db, 'mensajes'),
+      where('proyectoId', '==', proyecto.id),
+    );
+    const unsub = onSnapshot(
+      qMensajes,
+      snap => {
+        const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        data.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+        setMensajes(data);
+      },
+      err => console.error('Error en chat', err),
+    );
+    return unsub;
+  }, [proyecto]);
 
-            <View style={styles.metaRow}>
-              <Text style={styles.scheduleText}>{proyecto.modalidad}</Text>
-              <Text style={styles.scheduleText}>{proyecto.horas} horas</Text>
-            </View>
+  const enviarMensaje = async () => {
+    if (!mensaje.trim()) return;
+    try {
+      await addDoc(collection(db, 'mensajes'), {
+        proyectoId: proyecto.id,
+        uid: user.uid,
+        nombre: user.nombre,
+        texto: mensaje.trim(),
+        createdAt: Date.now(),
+      });
+      setMensaje('');
+    } catch (e) {
+      console.error(e);
+      Alert.alert('No se pudo enviar el mensaje');
+    }
+  };
 
-            <View style={styles.tagContainer}>
-              {proyecto.tecnologias.map(tech => (
-                <View key={tech} style={styles.tag}>
-                  <Text style={styles.tagText}>{tech}</Text>
-                </View>
-              ))}
-            </View>
-
-            <TouchableOpacity
-              disabled={applied}
-              style={[styles.applyButton, applied && { backgroundColor: theme.colors.muted }]}
-              onPress={() => setApplyModalProject(proyecto)}
-            >
-              <Text style={styles.applyButtonText}>{applied ? 'Postulado' : 'Postularse'}</Text>
-            </TouchableOpacity>
-          </View>
-        );
-      })}
-    </ScrollView>
-  );
-
-  const EventosTab = () => (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerName}>📅 Eventos del Campus</Text>
-      </View>
-
-      {eventos.map(evento => {
-        const date = new Date(evento.fecha + 'T00:00:00');
-        const day = date.getDate();
-        const month = date.toLocaleString('es-MX', { month: 'short' }).replace('.', '');
-        return (
-          <View key={evento.id} style={styles.card}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <View style={styles.eventDate}>
-                <Text style={styles.eventDay}>{day}</Text>
-                <Text style={styles.eventMonth}>{month}</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.cardTitle}>{evento.titulo}</Text>
-                <Text style={styles.description}>{evento.lugar} - {evento.hora}</Text>
-              </View>
-            </View>
-          </View>
-        );
-      })}
-    </ScrollView>
-  );
-
-  const PerfilTab = () => (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerName}>👤 Mi Perfil</Text>
-      </View>
-      <View style={styles.profileCard}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{userProfile.nombre.split(' ').map(n => n[0]).join('')}</Text>
-        </View>
-        <Text style={styles.profileName}>{userProfile.nombre}</Text>
-        <Text style={styles.profileCareer}>{userProfile.carrera}</Text>
-        <Text style={styles.profileSemester}>{userProfile.semestre} semestre</Text>
-
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{userProfile.horasServicio}</Text>
-            <Text style={styles.statLabel}>Completadas</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{userProfile.horasRequeridas - userProfile.horasServicio}</Text>
-            <Text style={styles.statLabel}>Restantes</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{favorites.length}</Text>
-            <Text style={styles.statLabel}>Favoritos</Text>
-          </View>
-        </View>
-
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutButtonText}>Cerrar sesión</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
-  );
-
-  const TabBar = () => {
-    const tabs = [
-      { key: 'campus', icon: '🏛', label: 'Campus' },
-      { key: 'servicio', icon: '🎓', label: 'Servicio' },
-      { key: 'eventos', icon: '📅', label: 'Eventos' },
-      { key: 'perfil', icon: '👤', label: 'Perfil' }
-    ];
+  const renderItem = ({ item }) => {
+    const own = item.uid === user.uid;
     return (
-      <View style={styles.tabBarContainer}>
-        <View style={styles.tabBar}>
-          {tabs.map(tab => (
-            <TouchableOpacity key={tab.key} style={styles.tabItem} onPress={() => setActiveTab(tab.key)}>
-              {activeTab === tab.key && <View style={styles.activeTabPill} />}
-              <Text style={styles.tabIcon}>{tab.icon}</Text>
-              <Text style={[styles.tabLabel, activeTab === tab.key && styles.activeTabLabel]}>{tab.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+      <View
+        style={{
+          alignSelf: own ? 'flex-end' : 'flex-start',
+          backgroundColor: own ? colors.primary : colors.backgroundAlt,
+          borderRadius: 16,
+          padding: 8,
+          marginVertical: 2,
+          maxWidth: '80%',
+        }}
+      >
+        <Text style={{ fontSize: 11, color: colors.textMuted }}>
+          {own ? 'Tú' : item.nombre}
+        </Text>
+        <Text style={{ color: colors.text, fontSize: 13 }}>{item.texto}</Text>
       </View>
     );
   };
 
-  // App autenticada
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
-      <StatusBar barStyle="light-content" backgroundColor={theme.colors.background} />
-      {activeTab === 'campus' && <CampusTab />}
-      {activeTab === 'servicio' && <ServicioTab />}
-      {activeTab === 'eventos' && <EventosTab />}
-      {activeTab === 'perfil' && <PerfilTab />}
-      <TabBar />
+    <SafeAreaView
+      style={[globalStyles.safeArea, { paddingTop: ANDROID_TOP }]}
+    >
+      <StatusBar barStyle="light-content" />
+      <View style={[globalStyles.screenContainer, { paddingBottom: 0 }]}>
+        <View style={globalStyles.cardHeaderRow}>
+          <TouchableOpacity onPress={onBack}>
+            <Text style={{ color: colors.primary }}>← Volver</Text>
+          </TouchableOpacity>
+          <Text style={[globalStyles.screenTitle, { fontSize: 18 }]}>
+            Chat: {proyecto.titulo}
+          </Text>
+        </View>
 
-      {/* Modal de lugar (campus) */}
-      <Modal visible={!!selectedLocation} animationType="slide" transparent>
-        {selectedLocation && (
-          <View style={styles.modalBackdrop}>
-            <View style={styles.modalContent}>
-              <TouchableOpacity style={styles.closeButton} onPress={() => setSelectedLocation(null)}>
-                <Text style={{ fontWeight: 'bold' }}>✕</Text>
-              </TouchableOpacity>
-              <Text style={styles.modalTitle}>{selectedLocation.nombre}</Text>
-              <Text style={styles.description}>{selectedLocation.descripcion}</Text>
-              <Text style={[styles.scheduleText, { marginVertical: theme.spacing.md }]}>🕒 {selectedLocation.horario}</Text>
-              <TouchableOpacity style={styles.applyButton}><Text style={styles.applyButtonText}>Ver en mapa</Text></TouchableOpacity>
-            </View>
+        <FlatList
+          data={mensajes}
+          keyExtractor={item => item.id}
+          renderItem={renderItem}
+          contentContainerStyle={{ paddingVertical: 8 }}
+        />
+      </View>
+
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={80}
+      >
+        <View
+          style={{
+            flexDirection: 'row',
+            paddingHorizontal: 12,
+            paddingVertical: 8,
+            borderTopWidth: 1,
+            borderTopColor: colors.border,
+            backgroundColor: colors.cardBackground,
+          }}
+        >
+          <TextInput
+            placeholder="Escribe un mensaje..."
+            placeholderTextColor={colors.textMuted}
+            style={[globalStyles.input, { flex: 1, marginBottom: 0 }]}
+            value={mensaje}
+            onChangeText={setMensaje}
+          />
+          <TouchableOpacity
+            style={[globalStyles.primaryButton, { marginTop: 0, marginLeft: 8 }]}
+            onPress={enviarMensaje}
+          >
+            <Text style={globalStyles.primaryButtonText}>Enviar</Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+}
+
+// ================== SERVICIO SOCIAL ==================
+
+function ServicioTab({ user, onOpenChat }) {
+  const isMaestro = user?.role === 'maestro';
+
+  const [proyectos, setProyectos] = useState([]);
+  const [postulaciones, setPostulaciones] = useState([]);
+  const [horasDocs, setHorasDocs] = useState([]);
+  const [horasGestion, setHorasGestion] = useState([]);
+
+  const [filtroModalidad, setFiltroModalidad] = useState('Todos');
+  const [filtroCausa, setFiltroCausa] = useState('Todos');
+
+  // Form maestro: crear proyecto
+  const [nuevoTitulo, setNuevoTitulo] = useState('');
+  const [nuevoHoras, setNuevoHoras] = useState('');
+  const [nuevoModalidad, setNuevoModalidad] = useState('Presencial');
+
+  // Form alumno: registro de horas
+  const [horasRegistrar, setHorasRegistrar] = useState('');
+  const [horasComentario, setHorasComentario] = useState('');
+  const [proyectoParaHoras, setProyectoParaHoras] = useState(null);
+
+  // Maestro: ver postulados
+  const [modalPostuladosProyecto, setModalPostuladosProyecto] = useState(null);
+
+  // === Suscripciones a Firestore ===
+  useEffect(() => {
+    const qProy = query(collection(db, 'proyectosServicio'), orderBy('titulo'));
+    const unsub1 = onSnapshot(
+      qProy,
+      snap => {
+        const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        setProyectos(data);
+      },
+      err => console.error('Error proyectos servicio', err),
+    );
+
+    if (!user?.uid) return () => unsub1();
+
+    const qPost = isMaestro
+      ? query(collection(db, 'postulaciones'))
+      : query(collection(db, 'postulaciones'), where('uid', '==', user.uid));
+
+    const unsub2 = onSnapshot(
+      qPost,
+      snap => {
+        const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        setPostulaciones(data);
+      },
+      err => console.error('Error postulaciones', err),
+    );
+
+    const qHoras = query(
+      collection(db, 'horasServicio'),
+      where('uid', '==', user.uid),
+    );
+    const unsub3 = onSnapshot(
+      qHoras,
+      snap => {
+        const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        setHorasDocs(data);
+      },
+      err => console.error('Error horas servicio', err),
+    );
+
+    return () => {
+      unsub1();
+      unsub2();
+      unsub3();
+    };
+  }, [user?.uid, user?.role]);
+
+  // Horas para que el maestro las gestione (todas donde él es responsable)
+  useEffect(() => {
+    if (!user?.uid || !isMaestro) return;
+
+    const qHorasMaestro = query(
+      collection(db, 'horasServicio'),
+      where('responsableUid', '==', user.uid),
+    );
+    const unsub = onSnapshot(
+      qHorasMaestro,
+      snap => {
+        const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        setHorasGestion(data);
+      },
+      err => console.error('Error horas maestro', err),
+    );
+    return unsub;
+  }, [user?.uid, isMaestro]);
+
+  const data = proyectos.length ? proyectos : DEFAULT_PROYECTOS_SERVICIO;
+
+  // Map para estado de la postulación del alumno
+  const statusByProyecto = useMemo(() => {
+    if (isMaestro) return new Map();
+    const map = new Map();
+    postulaciones.forEach(p => {
+      map.set(p.proyectoId, p.status);
+    });
+    return map;
+  }, [postulaciones, isMaestro]);
+
+  // Map para postulados que ve el maestro
+  const postulacionesPorProyecto = useMemo(() => {
+    if (!isMaestro) return {};
+    const map = {};
+    postulaciones.forEach(p => {
+      if (!map[p.proyectoId]) map[p.proyectoId] = [];
+      map[p.proyectoId].push(p);
+    });
+    return map;
+  }, [postulaciones, isMaestro]);
+
+  const horasAprobadas = useMemo(
+    () =>
+      horasDocs
+        .filter(h => h.status === 'Aprobada')
+        .reduce((acc, h) => acc + (h.horas || 0), 0),
+    [horasDocs],
+  );
+
+  const proyectosFiltrados = data.filter(p => {
+    if (filtroModalidad !== 'Todos' && p.modalidad !== filtroModalidad) {
+      return false;
+    }
+    if (
+      filtroCausa !== 'Todos' &&
+      p.causa &&
+      p.causa.toLowerCase() !== filtroCausa.toLowerCase()
+    ) {
+      return false;
+    }
+    return true;
+  });
+
+  const togglePostulacion = async proyecto => {
+    if (isMaestro) return; // seguridad extra
+
+    const status = statusByProyecto.get(proyecto.id);
+    const docPost = postulaciones.find(
+      p => p.proyectoId === proyecto.id && p.uid === user.uid,
+    );
+
+    try {
+      if (!status) {
+        // Crear nueva postulación
+        await addDoc(collection(db, 'postulaciones'), {
+          uid: user.uid,
+          proyectoId: proyecto.id,
+          status: 'Enviada',
+          createdAt: Date.now(),
+          studentName: user.nombre,
+          studentEmail: user.email,
+          responsableUid: proyecto.responsableUid || proyecto.createdBy || null,
+        });
+      } else if (status === 'Enviada') {
+        // Cancelar
+        if (!docPost) return;
+        Alert.alert(
+          'Cancelar postulación',
+          '¿Seguro que quieres cancelar tu postulación?',
+          [
+            { text: 'No' },
+            {
+              text: 'Sí',
+              onPress: async () => {
+                await setDoc(
+                  doc(db, 'postulaciones', docPost.id),
+                  { status: 'Cancelada' },
+                  { merge: true },
+                );
+              },
+            },
+          ],
+        );
+      } else {
+        // Solo mostrar el estado
+        Alert.alert('Postulación', `Tu postulación está en estado: ${status}.`);
+      }
+    } catch (e) {
+      console.error(e);
+      Alert.alert('Error al actualizar postulación.');
+    }
+  };
+
+  const registrarHoras = async () => {
+    if (!proyectoParaHoras || !horasRegistrar.trim()) return;
+    const h = Number(horasRegistrar);
+    if (Number.isNaN(h) || h <= 0) {
+      Alert.alert('Horas no válidas');
+      return;
+    }
+    try {
+      await addDoc(collection(db, 'horasServicio'), {
+        uid: user.uid,
+        proyectoId: proyectoParaHoras.id,
+        proyectoTitulo: proyectoParaHoras.titulo,
+        horas: h,
+        comentario: horasComentario.trim(),
+        status: 'Pendiente',
+        createdAt: Date.now(),
+        responsableUid: proyectoParaHoras.responsableUid || null,
+        studentName: user.nombre,
+        studentEmail: user.email,
+      });
+      setHorasRegistrar('');
+      setHorasComentario('');
+      setProyectoParaHoras(null);
+    } catch (e) {
+      console.error(e);
+      Alert.alert('Error al registrar horas');
+    }
+  };
+
+  const crearProyecto = async () => {
+    if (!nuevoTitulo.trim()) {
+      Alert.alert('Título requerido');
+      return;
+    }
+    const horasNum = Number(nuevoHoras) || 0;
+    try {
+      await addDoc(collection(db, 'proyectosServicio'), {
+        titulo: nuevoTitulo.trim(),
+        horas: horasNum,
+        modalidad: nuevoModalidad,
+        organizacion: 'Organización UAQ',
+        descripcion: 'Descripción pendiente',
+        fechaCreacion: Date.now(),
+        responsableUid: user.uid,
+      });
+      setNuevoTitulo('');
+      setNuevoHoras('');
+      setNuevoModalidad('Presencial');
+    } catch (e) {
+      console.error(e);
+      Alert.alert('No se pudo crear el proyecto');
+    }
+  };
+
+  const actualizarEstadoHoras = async (registro, nuevoEstado) => {
+    try {
+      await setDoc(
+        doc(db, 'horasServicio', registro.id),
+        { status: nuevoEstado },
+        { merge: true },
+      );
+    } catch (e) {
+      console.error(e);
+      Alert.alert('No se pudo actualizar el estado de las horas');
+    }
+  };
+
+  const progreso =
+    user?.horasRequeridas && user.horasRequeridas > 0
+      ? Math.min(1, horasAprobadas / user.horasRequeridas)
+      : 0;
+
+  const renderItem = ({ item }) => {
+    const status = statusByProyecto.get(item.id);
+    const postulados = postulacionesPorProyecto[item.id] || [];
+
+    let botonTexto = 'Postularse';
+    if (status === 'Enviada') botonTexto = 'Cancelar postulación';
+    else if (status && status !== 'Enviada')
+      botonTexto = 'Ver estado de tu postulación';
+
+    return (
+      <View style={globalStyles.card}>
+        <View style={globalStyles.cardHeaderRow}>
+          <Text style={globalStyles.cardTitle}>{item.titulo}</Text>
+          <View style={globalStyles.badge}>
+            <Text style={globalStyles.badgeText}>{item.modalidad || 'N/D'}</Text>
           </View>
-        )}
-      </Modal>
+        </View>
+        <Text style={globalStyles.infoText}>{item.descripcion}</Text>
+        <Text style={globalStyles.infoText}>
+          Organización: {item.organizacion}
+        </Text>
+        <Text style={globalStyles.infoText}>
+          Horas aproximadas: {item.horas || 'N/D'}
+        </Text>
 
-      {/* Modal de requisitos/actividades/horario para postularse */}
-      <Modal transparent visible={!!applyModalProject} animationType="fade">
-        <View style={styles.successBackdrop}>
-          {applyModalProject && (
-            <View style={[styles.successCard, { alignItems: 'flex-start' }]}>
-              <Text style={[styles.successTitle, { alignSelf: 'center' }]}>📋 Detalles de la Postulación</Text>
-              <Text style={[styles.modalProjectTitle]}>{applyModalProject.titulo}</Text>
-              <Text style={[styles.description]}>🏢 {applyModalProject.organizacion}</Text>
-
-              <Text style={styles.modalSectionTitle}>Requisitos</Text>
-              {applyModalProject.requisitos.map((req, idx) => (
-                <Text key={`r-${idx}`} style={styles.modalListItem}>• {req}</Text>
-              ))}
-
-              <Text style={[styles.modalSectionTitle, { marginTop: theme.spacing.md }]}>Actividades</Text>
-              {applyModalProject.actividades.map((act, idx) => (
-                <Text key={`a-${idx}`} style={styles.modalListItem}>• {act}</Text>
-              ))}
-
-              <Text style={[styles.modalSectionTitle, { marginTop: theme.spacing.md }]}>Horario</Text>
-              <Text style={styles.modalListItem}>🕒 {applyModalProject.horarioDetallado}</Text>
-
-              <View style={{ flexDirection: 'row', gap: 12, width: '100%', marginTop: theme.spacing.lg }}>
-                <TouchableOpacity
-                  style={[styles.dialogBtn, { backgroundColor: theme.colors.muted }]}
-                  onPress={() => setApplyModalProject(null)}
-                >
-                  <Text style={styles.dialogBtnText}>Cancelar</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.dialogBtn, { backgroundColor: theme.colors.primary, flex: 1 }]}
-                  onPress={() => {
-                    setApplyModalProject(null);
-                    setAppliedIds(prev => new Set([...Array.from(prev), applyModalProject.id]));
-                    setAppliedSuccessVisible(true);
-                  }}
-                >
-                  <Text style={styles.dialogBtnText}>Aceptar</Text>
-                </TouchableOpacity>
-              </View>
+        <View style={globalStyles.cardChipRow}>
+          {item.causa && (
+            <View style={globalStyles.chip}>
+              <Text style={globalStyles.chipText}>{item.causa}</Text>
+            </View>
+          )}
+          {item.horarioFlexible && (
+            <View style={globalStyles.chip}>
+              <Text style={globalStyles.chipText}>Horario flexible</Text>
+            </View>
+          )}
+          {item.accesible && (
+            <View style={globalStyles.chip}>
+              <Text style={globalStyles.chipText}>♿ Accesible</Text>
             </View>
           )}
         </View>
-      </Modal>
 
-      {/* Modal de confirmación de postulación */}
-      <Modal transparent visible={appliedSuccessVisible} animationType="fade">
-        <View style={styles.successBackdrop}>
-          <View style={styles.successCard}>
-            <Text style={styles.successTitle}>🎉 ¡Te has postulado!</Text>
-            <Text style={styles.successMsg}>
-              Te has postulado, espera que te contactemos para ver si te aceptan.
-            </Text>
+        {!isMaestro && status && (
+          <Text style={[globalStyles.infoText, { marginTop: 4 }]}>
+            Estado de tu postulación: {status}
+          </Text>
+        )}
+
+        {isMaestro && (
+          <Text style={[globalStyles.infoText, { marginTop: 4 }]}>
+            Postulaciones recibidas: {postulados.length}
+          </Text>
+        )}
+
+        {!isMaestro && (
+          <>
             <TouchableOpacity
-              style={styles.successBtn}
-              onPress={() => setAppliedSuccessVisible(false)}
+              style={globalStyles.primaryButton}
+              onPress={() => togglePostulacion(item)}
             >
-              <Text style={styles.successBtnText}>Entendido</Text>
+              <Text style={globalStyles.primaryButtonText}>{botonTexto}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={globalStyles.outlineButton}
+              onPress={() => setProyectoParaHoras(item)}
+            >
+              <Text style={globalStyles.outlineButtonText}>Registrar horas</Text>
+            </TouchableOpacity>
+          </>
+        )}
+
+        {isMaestro && (
+          <TouchableOpacity
+            style={globalStyles.outlineButton}
+            onPress={() => setModalPostuladosProyecto(item)}
+          >
+            <Text style={globalStyles.outlineButtonText}>Ver postulantes</Text>
+          </TouchableOpacity>
+        )}
+
+        <TouchableOpacity
+          style={globalStyles.outlineButton}
+          onPress={() => onOpenChat(item)}
+        >
+          <Text style={globalStyles.outlineButtonText}>
+            {isMaestro ? 'Ver chat del proyecto' : 'Abrir chat'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  return (
+    <View style={{ flex: 1 }}>
+      <ScrollView
+        style={globalStyles.screenContainer}
+        contentContainerStyle={{ paddingBottom: proyectoParaHoras ? 220 : 16 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={globalStyles.screenTitle}>Servicio social</Text>
+        <Text style={globalStyles.screenSubtitle}>
+          Encuentra proyectos, postúlate y registra tu avance.
+        </Text>
+
+        {/* Progreso del alumno */}
+        {!isMaestro && (
+          <View style={globalStyles.card}>
+            <Text style={globalStyles.cardTitle}>Progreso de horas</Text>
+            <Text style={globalStyles.infoText}>
+              Horas aprobadas: {horasAprobadas} / {user?.horasRequeridas || 480}
+            </Text>
+            <View style={globalStyles.progressBarContainer}>
+              <View
+                style={[
+                  globalStyles.progressBarFill,
+                  { width: `${progreso * 100}%` },
+                ]}
+              />
+            </View>
+          </View>
+        )}
+
+        {/* Filtros simples */}
+        <View style={[globalStyles.card, { marginBottom: 12 }]}>
+          <Text style={globalStyles.cardTitle}>Filtros</Text>
+          <View style={[globalStyles.cardChipRow, { marginTop: 8 }]}>
+            {['Todos', 'Presencial', 'Híbrida', 'Virtual'].map(m => (
+              <TouchableOpacity
+                key={m}
+                style={[
+                  globalStyles.pill,
+                  {
+                    borderColor:
+                      filtroModalidad === m ? colors.primary : colors.border,
+                  },
+                ]}
+                onPress={() => setFiltroModalidad(m)}
+              >
+                <Text
+                  style={[
+                    globalStyles.pillText,
+                    filtroModalidad === m && globalStyles.pillTextActive,
+                  ]}
+                >
+                  {m}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        <FlatList
+          data={proyectosFiltrados}
+          keyExtractor={item => item.id}
+          renderItem={renderItem}
+          scrollEnabled={false}
+        />
+
+        {/* Maestro: crear proyecto */}
+        {isMaestro && (
+          <View style={[globalStyles.card, { marginTop: 12 }]}>
+            <Text style={globalStyles.cardTitle}>Crear proyecto</Text>
+            <TextInput
+              placeholder="Título del proyecto"
+              placeholderTextColor={colors.textMuted}
+              style={globalStyles.input}
+              value={nuevoTitulo}
+              onChangeText={setNuevoTitulo}
+            />
+            <TextInput
+              placeholder="Horas estimadas"
+              placeholderTextColor={colors.textMuted}
+              style={globalStyles.input}
+              keyboardType="numeric"
+              value={nuevoHoras}
+              onChangeText={setNuevoHoras}
+            />
+            <TextInput
+              placeholder="Modalidad (Presencial / Híbrida / Virtual)"
+              placeholderTextColor={colors.textMuted}
+              style={globalStyles.input}
+              value={nuevoModalidad}
+              onChangeText={setNuevoModalidad}
+            />
+            <TouchableOpacity
+              style={globalStyles.primaryButton}
+              onPress={crearProyecto}
+            >
+              <Text style={globalStyles.primaryButtonText}>
+                Guardar proyecto
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Maestro: gestión de horas */}
+        {isMaestro && horasGestion.length > 0 && (
+          <View style={[globalStyles.card, { marginTop: 12 }]}>
+            <Text style={globalStyles.cardTitle}>Horas por revisar</Text>
+            {horasGestion.map(h => (
+              <View
+                key={h.id}
+                style={{
+                  marginTop: 8,
+                  paddingTop: 6,
+                  borderTopWidth: 1,
+                  borderTopColor: colors.border,
+                }}
+              >
+                <Text style={globalStyles.infoText}>
+                  Alumno: {h.studentName || h.uid}
+                </Text>
+                <Text style={globalStyles.infoText}>
+                  Proyecto: {h.proyectoTitulo || h.proyectoId}
+                </Text>
+                <Text style={globalStyles.infoText}>Horas: {h.horas}</Text>
+                <Text style={globalStyles.infoText}>Estado: {h.status}</Text>
+
+                {h.status === 'Pendiente' && (
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      marginTop: 6,
+                      justifyContent: 'space-between',
+                    }}
+                  >
+                    <TouchableOpacity
+                      style={[
+                        globalStyles.primaryButton,
+                        { flex: 1, marginRight: 6 },
+                      ]}
+                      onPress={() => actualizarEstadoHoras(h, 'Aprobada')}
+                    >
+                      <Text style={globalStyles.primaryButtonText}>
+                        Aprobar
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        globalStyles.outlineButton,
+                        { flex: 1, marginLeft: 6 },
+                      ]}
+                      onPress={() => actualizarEstadoHoras(h, 'Rechazada')}
+                    >
+                      <Text style={globalStyles.outlineButtonText}>
+                        Rechazar
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            ))}
+          </View>
+        )}
+      </ScrollView>
+
+      {/* Bottom sheet de registro de horas (alumno) */}
+      {proyectoParaHoras && (
+        <View
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: colors.backgroundAlt,
+            padding: 16,
+            borderTopLeftRadius: 16,
+            borderTopRightRadius: 16,
+            borderTopWidth: 1,
+            borderTopColor: colors.border,
+          }}
+        >
+          <Text style={globalStyles.cardTitle}>
+            Registrar horas en {proyectoParaHoras.titulo}
+          </Text>
+          <TextInput
+            placeholder="Horas realizadas"
+            placeholderTextColor={colors.textMuted}
+            style={globalStyles.input}
+            keyboardType="numeric"
+            value={horasRegistrar}
+            onChangeText={setHorasRegistrar}
+          />
+          <TextInput
+            placeholder="Descripción breve de la actividad"
+            placeholderTextColor={colors.textMuted}
+            style={[globalStyles.input, { height: 80 }]}
+            value={horasComentario}
+            onChangeText={setHorasComentario}
+            multiline
+          />
+          <View
+            style={{ flexDirection: 'row', justifyContent: 'space-between' }}
+          >
+            <TouchableOpacity
+              style={[globalStyles.outlineButton, { flex: 1, marginRight: 8 }]}
+              onPress={() => setProyectoParaHoras(null)}
+            >
+              <Text style={globalStyles.outlineButtonText}>Cancelar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[globalStyles.primaryButton, { flex: 1, marginLeft: 8 }]}
+              onPress={registrarHoras}
+            >
+              <Text style={globalStyles.primaryButtonText}>Enviar</Text>
             </TouchableOpacity>
           </View>
         </View>
-      </Modal>
+      )}
+
+      {/* Modal de postulantes para el maestro */}
+      {isMaestro && modalPostuladosProyecto && (
+        <Modal
+          transparent
+          animationType="fade"
+          visible
+          onRequestClose={() => setModalPostuladosProyecto(null)}
+        >
+          <View style={globalStyles.modalOverlay}>
+            <View style={globalStyles.modalCard}>
+              <Text style={globalStyles.cardTitle}>
+                Postulantes: {modalPostuladosProyecto.titulo}
+              </Text>
+              {(
+                postulacionesPorProyecto[modalPostuladosProyecto.id] || []
+              ).length === 0 ? (
+                <Text style={globalStyles.infoText}>
+                  Aún no hay postulantes.
+                </Text>
+              ) : (
+                (postulacionesPorProyecto[modalPostuladosProyecto.id] || []).map(
+                  p => (
+                    <View
+                      key={p.id}
+                      style={{
+                        marginTop: 8,
+                        paddingTop: 6,
+                        borderTopWidth: 1,
+                        borderTopColor: colors.border,
+                      }}
+                    >
+                      <Text style={globalStyles.infoText}>
+                        {p.studentName || p.uid}
+                      </Text>
+                      <Text style={globalStyles.infoText}>
+                        Correo: {p.studentEmail}
+                      </Text>
+                      <Text style={globalStyles.infoText}>
+                        Estado: {p.status}
+                      </Text>
+                    </View>
+                  ),
+                )
+              )}
+
+              <TouchableOpacity
+                style={[globalStyles.primaryButton, { marginTop: 16 }]}
+                onPress={() => {
+                  onOpenChat(modalPostuladosProyecto);
+                  setModalPostuladosProyecto(null);
+                }}
+              >
+                <Text style={globalStyles.primaryButtonText}>
+                  Abrir chat del proyecto
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={globalStyles.outlineButton}
+                onPress={() => setModalPostuladosProyecto(null)}
+              >
+                <Text style={globalStyles.outlineButtonText}>Cerrar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      )}
+    </View>
+  );
+}
+
+// ================== EVENTOS ==================
+
+function EventosTab({ user }) {
+  const isMaestro = user?.role === 'maestro';
+  const [eventos, setEventos] = useState([]);
+
+  const [titulo, setTitulo] = useState('');
+  const [descripcion, setDescripcion] = useState('');
+  const [fecha, setFecha] = useState('');
+  const [campus, setCampus] = useState('');
+  const [tipo, setTipo] = useState('Académico');
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  useEffect(() => {
+    const qEventos = query(collection(db, 'eventos'), orderBy('fecha'));
+    const unsub = onSnapshot(
+      qEventos,
+      snap => {
+        const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        setEventos(data);
+      },
+      err => console.error('Error eventos', err),
+    );
+    return unsub;
+  }, []);
+
+  const data = eventos.length ? eventos : DEFAULT_EVENTOS;
+
+  const crearEvento = async () => {
+    if (!titulo.trim() || !fecha.trim()) {
+      Alert.alert('Título y fecha son obligatorios');
+      return;
+    }
+    try {
+      await addDoc(collection(db, 'eventos'), {
+        titulo: titulo.trim(),
+        descripcion: descripcion.trim(),
+        fecha: fecha.trim(),
+        campus: campus.trim() || 'Sin campus',
+        tipo: tipo.trim() || 'General',
+        createdBy: user.uid,
+        createdAt: Date.now(),
+      });
+      setTitulo('');
+      setDescripcion('');
+      setFecha('');
+      setCampus('');
+      setTipo('Académico');
+    } catch (e) {
+      console.error(e);
+      Alert.alert('No se pudo crear el evento');
+    }
+  };
+
+  const renderItem = ({ item }) => (
+    <View style={globalStyles.card}>
+      <View style={globalStyles.cardHeaderRow}>
+        <Text style={globalStyles.cardTitle}>{item.titulo}</Text>
+        {item.tipo && (
+          <View style={globalStyles.badge}>
+            <Text style={globalStyles.badgeText}>{item.tipo}</Text>
+          </View>
+        )}
+      </View>
+      <Text style={globalStyles.infoText}>{item.descripcion}</Text>
+      <View style={globalStyles.cardChipRow}>
+        {item.fecha && (
+          <View style={globalStyles.chip}>
+            <Text style={globalStyles.chipText}>📅 {item.fecha}</Text>
+          </View>
+        )}
+        {item.campus && (
+          <View style={globalStyles.chip}>
+            <Text style={globalStyles.chipText}>📍 {item.campus}</Text>
+          </View>
+        )}
+      </View>
+    </View>
+  );
+
+  const handleChangeFecha = (event, selectedDate) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      const iso = selectedDate.toISOString().slice(0, 10);
+      setFecha(iso);
+    }
+  };
+
+  return (
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={80}
+    >
+      <ScrollView
+        style={globalStyles.screenContainer}
+        contentContainerStyle={{ paddingBottom: 16 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={globalStyles.screenTitle}>Eventos UAQ</Text>
+        <Text style={globalStyles.screenSubtitle}>
+          Actividades académicas, culturales y deportivas.
+        </Text>
+
+        <FlatList
+          data={data}
+          keyExtractor={item => item.id}
+          renderItem={renderItem}
+          scrollEnabled={false}
+        />
+
+        {isMaestro && (
+          <View style={[globalStyles.card, { marginTop: 12 }]}>
+            <Text style={globalStyles.cardTitle}>Crear evento</Text>
+            <TextInput
+              placeholder="Título del evento"
+              placeholderTextColor={colors.textMuted}
+              style={globalStyles.input}
+              value={titulo}
+              onChangeText={setTitulo}
+            />
+            <TextInput
+              placeholder="Descripción"
+              placeholderTextColor={colors.textMuted}
+              style={globalStyles.input}
+              value={descripcion}
+              onChangeText={setDescripcion}
+            />
+
+            <TouchableOpacity
+              style={globalStyles.input}
+              onPress={() => setShowDatePicker(true)}
+            >
+              <Text
+                style={{
+                  color: fecha ? colors.text : colors.textMuted,
+                  fontSize: 14,
+                }}
+              >
+                {fecha || 'Fecha (toca para elegir)'}
+              </Text>
+            </TouchableOpacity>
+
+            {showDatePicker && (
+              <DateTimePicker
+                value={fecha ? new Date(fecha) : new Date()}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                onChange={handleChangeFecha}
+              />
+            )}
+
+            <TextInput
+              placeholder="Campus (Centro, Juriquilla, Aeropuerto...)"
+              placeholderTextColor={colors.textMuted}
+              style={globalStyles.input}
+              value={campus}
+              onChangeText={setCampus}
+            />
+            <TextInput
+              placeholder="Tipo (Académico, Cultural, Deportivo...)"
+              placeholderTextColor={colors.textMuted}
+              style={globalStyles.input}
+              value={tipo}
+              onChangeText={setTipo}
+            />
+            <TouchableOpacity
+              style={globalStyles.primaryButton}
+              onPress={crearEvento}
+            >
+              <Text style={globalStyles.primaryButtonText}>Guardar evento</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
+
+// ================== PERFIL ==================
+
+function PerfilTab({ user, horasAprobadas }) {
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (e) {
+      console.error(e);
+      Alert.alert('Error al cerrar sesión');
+    }
+  };
+
+  const req = user?.horasRequeridas || 480;
+  const progreso = Math.min(1, req ? horasAprobadas / req : 0);
+
+  return (
+    <ScrollView
+      style={globalStyles.screenContainer}
+      contentContainerStyle={{ paddingBottom: 16 }}
+      showsVerticalScrollIndicator={false}
+    >
+      <Text style={globalStyles.screenTitle}>Perfil</Text>
+      <Text style={globalStyles.screenSubtitle}>
+        Datos básicos y resumen de tu actividad.
+      </Text>
+
+      <View style={globalStyles.card}>
+        <Text style={globalStyles.cardTitle}>{user?.nombre || 'Usuario'}</Text>
+        <Text style={globalStyles.infoText}>{user?.email}</Text>
+        <View style={[globalStyles.cardChipRow, { marginTop: 10 }]}>
+          <View style={globalStyles.chip}>
+            <Text style={globalStyles.chipText}>
+              Rol: {user?.role || 'alumno'}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={globalStyles.card}>
+        <Text style={globalStyles.cardTitle}>Servicio social</Text>
+        <Text style={globalStyles.infoText}>
+          Horas aprobadas: {horasAprobadas} / {req}
+        </Text>
+        <View style={globalStyles.progressBarContainer}>
+          <View
+            style={[
+              globalStyles.progressBarFill,
+              { width: `${progreso * 100}%` },
+            ]}
+          />
+        </View>
+      </View>
+
+      <TouchableOpacity
+        style={globalStyles.outlineButton}
+        onPress={handleLogout}
+      >
+        <Text style={globalStyles.outlineButtonText}>Cerrar sesión</Text>
+      </TouchableOpacity>
+    </ScrollView>
+  );
+}
+
+// ================== APP ROOT ==================
+
+export default function App() {
+  const [user, setUser] = useState(null);
+  const [currentTab, setCurrentTab] = useState('Campus');
+  const [initializing, setInitializing] = useState(true);
+
+  const [horasDocs, setHorasDocs] = useState([]);
+  const [chatProyecto, setChatProyecto] = useState(null);
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async fbUser => {
+      try {
+        if (fbUser) {
+          const snap = await getDoc(doc(db, 'users', fbUser.uid));
+          const data = snap.exists()
+            ? snap.data()
+            : {
+                uid: fbUser.uid,
+                email: fbUser.email,
+                nombre: fbUser.email,
+                role: 'alumno',
+                horasServicio: 0,
+                horasRequeridas: 480,
+              };
+          setUser(data);
+        } else {
+          setUser(null);
+        }
+      } catch (e) {
+        console.error('Error cargando perfil', e);
+      } finally {
+        setInitializing(false);
+      }
+    });
+
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    if (!user?.uid) return;
+    const qHoras = query(
+      collection(db, 'horasServicio'),
+      where('uid', '==', user.uid),
+    );
+    const unsub = onSnapshot(
+      qHoras,
+      snap => {
+        const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        setHorasDocs(data);
+      },
+      err => console.error('Error horas perfil', err),
+    );
+    return unsub;
+  }, [user?.uid]);
+
+  const horasAprobadas = useMemo(
+    () =>
+      horasDocs
+        .filter(h => h.status === 'Aprobada')
+        .reduce((acc, h) => acc + (h.horas || 0), 0),
+    [horasDocs],
+  );
+
+  if (initializing) {
+    return (
+      <SafeAreaView
+        style={[
+          globalStyles.safeArea,
+          {
+            justifyContent: 'center',
+            alignItems: 'center',
+            paddingTop: ANDROID_TOP,
+          },
+        ]}
+      >
+        <StatusBar barStyle="light-content" />
+        <Text style={globalStyles.screenTitle}>Cargando...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (!user) {
+    return <LoginScreen onAuthenticated={setUser} />;
+  }
+
+  if (chatProyecto) {
+    return (
+      <ChatScreen
+        proyecto={chatProyecto}
+        user={user}
+        onBack={() => setChatProyecto(null)}
+      />
+    );
+  }
+
+  return (
+    <SafeAreaView
+      style={[globalStyles.safeArea, { paddingTop: ANDROID_TOP }]}
+    >
+      <StatusBar barStyle="light-content" />
+      <View style={{ flex: 1 }}>
+        {currentTab === 'Campus' && <CampusTab user={user} />}
+        {currentTab === 'Servicio' && (
+          <ServicioTab user={user} onOpenChat={setChatProyecto} />
+        )}
+        {currentTab === 'Eventos' && <EventosTab user={user} />}
+        {currentTab === 'Perfil' && (
+          <PerfilTab user={user} horasAprobadas={horasAprobadas} />
+        )}
+      </View>
+      <BottomTabBar currentTab={currentTab} onTabChange={setCurrentTab} />
     </SafeAreaView>
   );
-};
-
-// --- Estilos ---
-const styles = StyleSheet.create({
-  // LOADING
-  loadingContainer: { flex: 1, backgroundColor: theme.colors.background, justifyContent: 'center', alignItems: 'center' },
-  loadingLogoImage: { width: 250, height: 250, resizeMode: 'contain' },
-
-  // LOGIN
-  loginContainer: { flex: 1, backgroundColor: theme.colors.background },
-  loginLogo: { ...theme.typography.h1, fontSize: 48, color: theme.colors.primary, textAlign: 'center', fontWeight: '900' },
-  loginTitle: { ...theme.typography.h2, textAlign: 'center', marginTop: theme.spacing.sm },
-  loginSubtitle: { ...theme.typography.body, color: theme.colors.subtext, textAlign: 'center', marginBottom: theme.spacing.lg * 2 },
-  inputGroup: { marginBottom: theme.spacing.md },
-  inputLabel: { ...theme.typography.caption, color: theme.colors.subtext, marginBottom: theme.spacing.sm },
-  textInput: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.md, padding: theme.spacing.md, ...theme.typography.body, color: theme.colors.text },
-  loginButton: { backgroundColor: theme.colors.primary, borderRadius: theme.borderRadius.md, padding: theme.spacing.md, alignItems: 'center', marginTop: theme.spacing.md },
-  loginButtonText: { color: theme.colors.white, fontWeight: 'bold', fontSize: 16 },
-  switchAuthContainer: { alignItems: 'center', marginTop: theme.spacing.md },
-  switchAuthText: { ...theme.typography.body, color: theme.colors.accent },
-
-  // Éxito de registro
-  successBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: theme.spacing.lg },
-  successCard: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.lg, padding: theme.spacing.lg, alignItems: 'center', width: '100%' },
-  successTitle: { ...theme.typography.h2, marginBottom: theme.spacing.sm, textAlign: 'center' },
-  successMsg: { ...theme.typography.body, color: theme.colors.subtext, textAlign: 'center' },
-  successBtn: { backgroundColor: theme.colors.primary, padding: theme.spacing.md, borderRadius: theme.borderRadius.md, marginTop: theme.spacing.lg, width: '100%', alignItems: 'center' },
-  successBtnText: { color: theme.colors.white, fontWeight: 'bold' },
-
-  // Custom Alert
-  alertBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' },
-  alertCard: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.lg, padding: theme.spacing.lg, marginHorizontal: theme.spacing.lg, width: '85%', ...theme.shadow },
-  alertTitle: { ...theme.typography.h3, color: theme.colors.text, marginBottom: theme.spacing.sm },
-  alertMessage: { ...theme.typography.body, color: theme.colors.subtext, lineHeight: 22 },
-  alertButton: { backgroundColor: theme.colors.primary, borderRadius: theme.borderRadius.md, padding: theme.spacing.md, alignItems: 'center', marginTop: theme.spacing.lg },
-  alertButtonText: { color: theme.colors.white, fontWeight: 'bold', fontSize: 16 },
-
-  // APP
-  container: { flex: 1, backgroundColor: theme.colors.background },
-  header: { padding: theme.spacing.md },
-  headerName: { ...theme.typography.h1 },
-  headerSubtitle: { ...theme.typography.body, color: theme.colors.subtext, marginTop: -4 },
-
-  searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.colors.surface, marginHorizontal: theme.spacing.md, paddingHorizontal: theme.spacing.md, borderRadius: theme.borderRadius.md, marginBottom: theme.spacing.sm, ...theme.shadow },
-  searchInput: { flex: 1, ...theme.typography.body, paddingVertical: theme.spacing.md, color: theme.colors.text },
-
-  card: { backgroundColor: theme.colors.surface, borderRadius: theme.borderRadius.lg, padding: theme.spacing.md, marginHorizontal: theme.spacing.md, marginBottom: theme.spacing.md, ...theme.shadow },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing.sm },
-  cardTitle: { ...theme.typography.h3, flexShrink: 1 },
-  description: { ...theme.typography.body, color: theme.colors.subtext, marginVertical: theme.spacing.sm },
-  metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: theme.spacing.sm },
-  ratingContainer: { flexDirection: 'row', alignItems: 'center' },
-  ratingText: { ...theme.typography.body, color: theme.colors.subtext, marginLeft: theme.spacing.sm },
-  scheduleText: { ...theme.typography.caption, color: theme.colors.subtext },
-
-  tagContainer: { flexDirection: 'row', flexWrap: 'wrap', marginTop: theme.spacing.md },
-  tag: { backgroundColor: theme.colors.highlight, borderRadius: 6, paddingHorizontal: theme.spacing.sm, paddingVertical: 4, marginRight: theme.spacing.sm, marginBottom: theme.spacing.sm },
-  tagText: { ...theme.typography.caption, color: theme.colors.primary, fontWeight: '600' },
-
-  progressBar: { height: 8, backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 4, marginTop: theme.spacing.md },
-  progressFill: { height: '100%', backgroundColor: theme.colors.primary, borderRadius: 4 },
-  progressLabel: { ...theme.typography.caption, alignSelf: 'flex-end', marginTop: theme.spacing.sm },
-
-  statusBadge: { borderRadius: 50, paddingHorizontal: theme.spacing.sm, paddingVertical: 4 },
-  statusBadgeText: { color: theme.colors.white, ...theme.typography.caption, fontWeight: 'bold' },
-
-  applyButton: { backgroundColor: theme.colors.primary, borderRadius: theme.borderRadius.md, padding: theme.spacing.md, alignItems: 'center', marginTop: theme.spacing.md },
-  applyButtonText: { color: theme.colors.white, fontWeight: 'bold' },
-
-  eventDate: { alignItems: 'center', marginRight: theme.spacing.md, backgroundColor: theme.colors.highlight, padding: theme.spacing.sm, borderRadius: theme.borderRadius.md },
-  eventDay: { ...theme.typography.h1, color: theme.colors.primary },
-  eventMonth: { ...theme.typography.caption, textTransform: 'uppercase', color: theme.colors.primary, fontWeight: '600' },
-
-  profileCard: { backgroundColor: theme.colors.surface, marginHorizontal: theme.spacing.md, borderRadius: theme.borderRadius.lg, padding: theme.spacing.lg, alignItems: 'center', ...theme.shadow },
-  avatar: { width: 100, height: 100, borderRadius: 50, backgroundColor: theme.colors.primary, justifyContent: 'center', alignItems: 'center', marginBottom: theme.spacing.md },
-  avatarText: { ...theme.typography.h1, color: theme.colors.white },
-  profileName: { ...theme.typography.h2 },
-  profileCareer: { ...theme.typography.body, color: theme.colors.primary, marginVertical: theme.spacing.sm / 2 },
-  profileSemester: { ...theme.typography.caption },
-
-  statsContainer: { flexDirection: 'row', justifyContent: 'space-around', borderTopWidth: 1, borderColor: '#1E293B', marginTop: theme.spacing.md, paddingTop: theme.spacing.md, width: '100%' },
-  statItem: { alignItems: 'center', flex: 1 },
-  statValue: { ...theme.typography.h2, color: theme.colors.text },
-  statLabel: { ...theme.typography.caption, color: theme.colors.subtext },
-
-  logoutButton: { backgroundColor: theme.colors.danger, borderRadius: theme.borderRadius.md, padding: theme.spacing.md, alignItems: 'center', marginTop: theme.spacing.lg, width: '100%' },
-  logoutButtonText: { color: theme.colors.white, fontWeight: 'bold' },
-
-  tabBarContainer: { paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.md, backgroundColor: theme.colors.background },
-  tabBar: { flexDirection: 'row', backgroundColor: theme.colors.surface, borderRadius: 50, padding: theme.spacing.sm, ...theme.shadow },
-  tabItem: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: theme.spacing.sm, position: 'relative' },
-  tabIcon: { fontSize: 24 },
-  tabLabel: { ...theme.typography.caption, marginTop: 4 },
-  activeTabLabel: { color: theme.colors.primary, fontWeight: '700' },
-  activeTabPill: { position: 'absolute', backgroundColor: theme.colors.highlight, borderRadius: 30, width: '90%', height: '100%', zIndex: -1 },
-
-  modalBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' },
-  modalContent: { backgroundColor: theme.colors.surface, borderTopLeftRadius: theme.borderRadius.lg, borderTopRightRadius: theme.borderRadius.lg, padding: theme.spacing.lg },
-  modalTitle: { ...theme.typography.h2, marginBottom: theme.spacing.sm },
-  closeButton: { position: 'absolute', top: theme.spacing.md, right: theme.spacing.md, backgroundColor: theme.colors.background, width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
-
-  // Modal de proyecto (Postularse)
-  modalProjectTitle: { ...theme.typography.h3, marginTop: theme.spacing.sm, marginBottom: theme.spacing.sm, alignSelf: 'flex-start' },
-  modalSectionTitle: { ...theme.typography.h3, marginTop: theme.spacing.sm },
-  modalListItem: { ...theme.typography.body, color: theme.colors.subtext, marginTop: 4 },
-  dialogBtn: { padding: theme.spacing.md, borderRadius: theme.borderRadius.md, flex: 1, alignItems: 'center' },
-  dialogBtnText: { color: theme.colors.white, fontWeight: '700' },
-});
-
-export default VidaUAQApp;
+}

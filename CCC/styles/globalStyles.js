@@ -1,0 +1,224 @@
+import { StyleSheet } from 'react-native';
+
+export const colors = {
+  primary: '#4E46E5',
+  primaryDark: '#3730A3',
+  primaryLight: '#EEF2FF',
+  background: '#020617',
+  backgroundAlt: '#0B1120',
+  cardBackground: '#020617',
+  border: '#1F2937',
+  text: '#F9FAFB',
+  textMuted: '#9CA3AF',
+  accent: '#22C55E',
+  danger: '#EF4444',
+  warning: '#F59E0B',
+};
+
+export const globalStyles = StyleSheet.create({
+  appContainer: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  screenContainer: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+  },
+  screenTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  screenSubtitle: {
+    fontSize: 13,
+    color: colors.textMuted,
+    marginBottom: 12,
+  },
+  card: {
+    backgroundColor: colors.cardBackground,
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  cardHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  cardChipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 8,
+    gap: 6,
+  },
+  chip: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginRight: 4,
+    marginBottom: 4,
+  },
+  chipText: {
+    fontSize: 11,
+    color: colors.textMuted,
+  },
+  infoText: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: 6,
+  },
+  primaryButton: {
+    marginTop: 10,
+    paddingVertical: 10,
+    borderRadius: 999,
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+  },
+  primaryButtonText: {
+    color: colors.text,
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  outlineButton: {
+    marginTop: 10,
+    paddingVertical: 10,
+    borderRadius: 999,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  outlineButtonText: {
+    color: colors.textMuted,
+    fontWeight: '500',
+    fontSize: 14,
+  },
+  input: {
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    color: colors.text,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: 10,
+    fontSize: 14,
+  },
+  errorText: {
+    color: colors.danger,
+    fontSize: 12,
+    marginBottom: 6,
+  },
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    backgroundColor: colors.primaryDark,
+  },
+  badgeText: {
+    fontSize: 11,
+    color: colors.text,
+  },
+  progressBarContainer: {
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: '#111827',
+    overflow: 'hidden',
+    marginTop: 6,
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: 999,
+    backgroundColor: colors.accent,
+  },
+  bottomTabBar: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    backgroundColor: colors.cardBackground,
+    paddingVertical: 6,
+    paddingHorizontal: 6,
+  },
+  bottomTabItem: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 6,
+    borderRadius: 999,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  bottomTabLabel: {
+    fontSize: 11,
+    color: colors.textMuted,
+  },
+  bottomTabLabelActive: {
+    color: colors.text,
+    fontWeight: '600',
+  },
+  bottomTabIcon: {
+    fontSize: 18,
+  },
+  separator: {
+    height: 8,
+  },
+  pill: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: colors.backgroundAlt,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginRight: 8,
+  },
+  pillText: {
+    fontSize: 11,
+    color: colors.textMuted,
+  },
+  pillTextActive: {
+    color: colors.text,
+    fontWeight: '600',
+  },
+
+  // --- Modal para detalles de ubicación ---
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalCard: {
+    width: '90%',
+    backgroundColor: colors.cardBackground,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  modalImage: {
+    width: '100%',
+    height: 180,
+    borderRadius: 12,
+    marginTop: 8,
+    marginBottom: 10,
+  },
+  modalDescription: {
+    fontSize: 13,
+    color: colors.textMuted,
+    marginBottom: 10,
+  },
+});
