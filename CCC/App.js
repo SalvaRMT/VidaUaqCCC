@@ -40,11 +40,8 @@ import {
 import { auth, db } from './firebaseConfig';
 import { colors, globalStyles } from './styles/globalStyles';
 
-// Padding para que NO se meta debajo de la barra de notificaciones (Android)
 const ANDROID_TOP =
   Platform.OS === 'android' ? StatusBar.currentHeight || 0 : 0;
-
-// ================== DATOS FALLBACK LOCALES ==================
 
 const DEFAULT_CAMPUS = [
   {
@@ -129,10 +126,6 @@ const DEFAULT_EVENTOS = [
   },
 ];
 
-// ========= Utilidad para URLs de Google Drive =========
-// Soporta:
-//  - https://drive.google.com/file/d/ID/view?usp=sharing
-//  - https://drive.google.com/open?id=ID
 function normalizeImageUrl(url) {
   if (!url) return '';
 
@@ -155,8 +148,6 @@ function normalizeImageUrl(url) {
   }
   return url;
 }
-
-// ================== TAB BAR ==================
 
 function BottomTabBar({ currentTab, onTabChange }) {
   const tabs = [
@@ -198,14 +189,12 @@ function BottomTabBar({ currentTab, onTabChange }) {
   );
 }
 
-// ================== LOGIN / REGISTRO ==================
-
 function LoginScreen({ onAuthenticated }) {
   const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [nombre, setNombre] = useState('');
-  const [role, setRole] = useState('alumno'); // alumno | maestro
+  const [role, setRole] = useState('alumno');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -221,7 +210,6 @@ function LoginScreen({ onAuthenticated }) {
       setLoading(true);
 
       if (isRegister) {
-        // === REGISTRO ===
         const cred = await createUserWithEmailAndPassword(auth, email, password);
         const uid = cred.user.uid;
 
@@ -238,7 +226,6 @@ function LoginScreen({ onAuthenticated }) {
         await setDoc(doc(db, 'users', uid), userData);
         onAuthenticated(userData);
       } else {
-        // === LOGIN ===
         const cred = await signInWithEmailAndPassword(auth, email, password);
         const uid = cred.user.uid;
 
@@ -295,6 +282,16 @@ function LoginScreen({ onAuthenticated }) {
         translucent={false}
         backgroundColor={colors.background}
       />
+
+      {/* logo al iniciar */}
+      <View style={{ alignItems: 'center', marginBottom: 16 }}>
+        <Image
+          source={require('./assets/logo.png')}
+          style={{ width: 140, height: 140, marginBottom: 8 }}
+          resizeMode="contain"
+        />
+      </View>
+
       <Text
         style={[globalStyles.screenTitle, { textAlign: 'center', marginBottom: 4 }]}
       >
@@ -410,15 +407,12 @@ function LoginScreen({ onAuthenticated }) {
   );
 }
 
-// ================== CAMPUS (MAPA + LISTA + CREAR UBICACIÓN) ==================
-
 function CampusTab({ user }) {
   const isMaestro = user?.role === 'maestro';
   const [lugares, setLugares] = useState([]);
   const [searchText, setSearchText] = useState('');
   const [selectedLugar, setSelectedLugar] = useState(null);
 
-  // form maestro
   const [nuevoNombre, setNuevoNombre] = useState('');
   const [nuevoDescripcion, setNuevoDescripcion] = useState('');
   const [nuevoCategoria, setNuevoCategoria] = useState('');
@@ -565,7 +559,7 @@ function CampusTab({ user }) {
       <ScrollView
         style={globalStyles.screenContainer}
         contentContainerStyle={{
-          paddingBottom: isMaestro ? 260 : 120, // más espacio para que el formulario no estorbe
+          paddingBottom: isMaestro ? 260 : 120,
         }}
         showsVerticalScrollIndicator={false}
       >
@@ -692,8 +686,6 @@ function CampusTab({ user }) {
   );
 }
 
-// ================== CHAT SIMPLE POR PROYECTO ==================
-
 function ChatScreen({ proyecto, user, onBack }) {
   const [mensaje, setMensaje] = useState('');
   const [mensajes, setMensajes] = useState([]);
@@ -701,7 +693,6 @@ function ChatScreen({ proyecto, user, onBack }) {
   useEffect(() => {
     if (!proyecto) return;
 
-    // SIN orderBy para no pedir índice. Ordenamos en cliente.
     const qMensajes = query(
       collection(db, 'mensajes'),
       where('proyectoId', '==', proyecto.id),
@@ -816,8 +807,6 @@ function ChatScreen({ proyecto, user, onBack }) {
   );
 }
 
-// ================== SERVICIO SOCIAL ==================
-
 function ServicioTab({ user, onOpenChat }) {
   const isMaestro = user?.role === 'maestro';
 
@@ -829,20 +818,16 @@ function ServicioTab({ user, onOpenChat }) {
   const [filtroModalidad, setFiltroModalidad] = useState('Todos');
   const [filtroCausa, setFiltroCausa] = useState('Todos');
 
-  // Form maestro: crear proyecto
   const [nuevoTitulo, setNuevoTitulo] = useState('');
   const [nuevoHoras, setNuevoHoras] = useState('');
   const [nuevoModalidad, setNuevoModalidad] = useState('Presencial');
 
-  // Form alumno: registro de horas
   const [horasRegistrar, setHorasRegistrar] = useState('');
   const [horasComentario, setHorasComentario] = useState('');
   const [proyectoParaHoras, setProyectoParaHoras] = useState(null);
 
-  // Maestro: ver postulados
   const [modalPostuladosProyecto, setModalPostuladosProyecto] = useState(null);
 
-  // === Suscripciones a Firestore ===
   useEffect(() => {
     const qProy = query(collection(db, 'proyectosServicio'), orderBy('titulo'));
     const unsub1 = onSnapshot(
@@ -889,7 +874,6 @@ function ServicioTab({ user, onOpenChat }) {
     };
   }, [user?.uid, user?.role]);
 
-  // Horas para que el maestro las gestione (todas donde él es responsable)
   useEffect(() => {
     if (!user?.uid || !isMaestro) return;
 
@@ -910,7 +894,6 @@ function ServicioTab({ user, onOpenChat }) {
 
   const data = proyectos.length ? proyectos : DEFAULT_PROYECTOS_SERVICIO;
 
-  // Map para estado de la postulación del alumno
   const statusByProyecto = useMemo(() => {
     if (isMaestro) return new Map();
     const map = new Map();
@@ -920,7 +903,6 @@ function ServicioTab({ user, onOpenChat }) {
     return map;
   }, [postulaciones, isMaestro]);
 
-  // Map para postulados que ve el maestro
   const postulacionesPorProyecto = useMemo(() => {
     if (!isMaestro) return {};
     const map = {};
@@ -954,7 +936,7 @@ function ServicioTab({ user, onOpenChat }) {
   });
 
   const togglePostulacion = async proyecto => {
-    if (isMaestro) return; // seguridad extra
+    if (isMaestro) return;
 
     const status = statusByProyecto.get(proyecto.id);
     const docPost = postulaciones.find(
@@ -963,7 +945,6 @@ function ServicioTab({ user, onOpenChat }) {
 
     try {
       if (!status) {
-        // Crear nueva postulación
         await addDoc(collection(db, 'postulaciones'), {
           uid: user.uid,
           proyectoId: proyecto.id,
@@ -974,7 +955,6 @@ function ServicioTab({ user, onOpenChat }) {
           responsableUid: proyecto.responsableUid || proyecto.createdBy || null,
         });
       } else if (status === 'Enviada') {
-        // Cancelar
         if (!docPost) return;
         Alert.alert(
           'Cancelar postulación',
@@ -994,7 +974,6 @@ function ServicioTab({ user, onOpenChat }) {
           ],
         );
       } else {
-        // Solo mostrar el estado
         Alert.alert('Postulación', `Tu postulación está en estado: ${status}.`);
       }
     } catch (e) {
@@ -1181,7 +1160,6 @@ function ServicioTab({ user, onOpenChat }) {
           Encuentra proyectos, postúlate y registra tu avance.
         </Text>
 
-        {/* Progreso del alumno */}
         {!isMaestro && (
           <View style={globalStyles.card}>
             <Text style={globalStyles.cardTitle}>Progreso de horas</Text>
@@ -1199,7 +1177,6 @@ function ServicioTab({ user, onOpenChat }) {
           </View>
         )}
 
-        {/* Filtros simples */}
         <View style={[globalStyles.card, { marginBottom: 12 }]}>
           <Text style={globalStyles.cardTitle}>Filtros</Text>
           <View style={[globalStyles.cardChipRow, { marginTop: 8 }]}>
@@ -1235,7 +1212,6 @@ function ServicioTab({ user, onOpenChat }) {
           scrollEnabled={false}
         />
 
-        {/* Maestro: crear proyecto */}
         {isMaestro && (
           <View style={[globalStyles.card, { marginTop: 12 }]}>
             <Text style={globalStyles.cardTitle}>Crear proyecto</Text>
@@ -1272,7 +1248,6 @@ function ServicioTab({ user, onOpenChat }) {
           </View>
         )}
 
-        {/* Maestro: gestión de horas */}
         {isMaestro && horasGestion.length > 0 && (
           <View style={[globalStyles.card, { marginTop: 12 }]}>
             <Text style={globalStyles.cardTitle}>Horas por revisar</Text>
@@ -1333,7 +1308,6 @@ function ServicioTab({ user, onOpenChat }) {
         )}
       </ScrollView>
 
-      {/* Bottom sheet de registro de horas (alumno) */}
       {proyectoParaHoras && (
         <View
           style={{
@@ -1387,7 +1361,6 @@ function ServicioTab({ user, onOpenChat }) {
         </View>
       )}
 
-      {/* Modal de postulantes para el maestro */}
       {isMaestro && modalPostuladosProyecto && (
         <Modal
           transparent
@@ -1457,8 +1430,6 @@ function ServicioTab({ user, onOpenChat }) {
     </View>
   );
 }
-
-// ================== EVENTOS ==================
 
 function EventosTab({ user }) {
   const isMaestro = user?.role === 'maestro';
@@ -1637,8 +1608,6 @@ function EventosTab({ user }) {
   );
 }
 
-// ================== PERFIL ==================
-
 function PerfilTab({ user, horasAprobadas }) {
   const handleLogout = async () => {
     try {
@@ -1699,8 +1668,6 @@ function PerfilTab({ user, horasAprobadas }) {
     </ScrollView>
   );
 }
-
-// ================== APP ROOT ==================
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -1780,6 +1747,12 @@ export default function App() {
           barStyle="light-content"
           translucent={false}
           backgroundColor={colors.background}
+        />
+        {/* logo en pantalla de carga*/}
+        <Image
+          source={require('./assets/logo.png')}
+          style={{ width: 140, height: 140, marginBottom: 16 }}
+          resizeMode="contain"
         />
         <Text style={globalStyles.screenTitle}>Cargando...</Text>
       </SafeAreaView>
