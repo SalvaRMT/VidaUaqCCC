@@ -194,7 +194,6 @@ export const globalStyles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // --- Modal para detalles de ubicación ---
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.6)',
